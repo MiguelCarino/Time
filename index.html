@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>World Clock – Time Zones</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    :root {
+      /* Moe (light) theme – beige/yellow side */
+      --bg: #fff7e6;
+      --bg-elevated: #fffaf0;
+      --bg-panel: #fff8eb;
+      --bg-header: #ffefc2;
+      --bg-row-alt: #fff3d7;
+
+      --text: #3b2f1a;
+      --text-muted: #9a7b32;
+
+      --border: #fcd9a6;
+      --accent: #f97316;
+      --accent-soft: rgba(249, 115, 22, 0.15);
+      --danger: #dc2626;
+
+      --shadow-soft: 0 18px 40px rgba(250, 204, 21, 0.3);
+    }
+
+    body.dark {
+      /* Pitch-black dark theme */
+      --bg: #000000;
+      --bg-elevated: #020202;
+      --bg-panel: #050505;
+      --bg-header: #050505;
+      --bg-row-alt: #080808;
+
+      --text: #ffffff;
+      --text-muted: #a1a1aa;
+
+      --border: #1f1f1f;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.14);
+      --danger: #f97373;
+
+      --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.9);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, #ffeec7 0, transparent 55%),
+        radial-gradient(circle at bottom right, #ffe4b5 0, transparent 55%),
+        var(--bg);
+      color: var(--text);
+      font-size: 15px;
+    }
+
+    body.dark {
+      background:
+        radial-gradient(circle at top left, #020617 0, transparent 55%),
+        radial-gradient(circle at bottom right, #000000 0, transparent 55%),
+        var(--bg);
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 1040px;
+      height: 100vh;
+      padding: 1rem 1rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      justify-content: center; /* center when table hidden */
+    }
+
+    body.show-table .app-shell {
+      justify-content: flex-start; /* normal layout when table is visible */
+    }
+
+    .card {
+      background: linear-gradient(135deg, rgba(255, 250, 240, 0.98), rgba(255, 239, 194, 0.98));
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      padding: 0.9rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    body.dark .card {
+      background: linear-gradient(135deg, rgba(5, 5, 5, 0.98), rgba(15, 15, 15, 0.98));
+    }
+
+    .main-card {
+      cursor: pointer; /* used to hide table on click */
+    }
+
+    .main-card * {
+      cursor: auto;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(249, 115, 22, 0.5);
+    }
+
+    .toggles {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      cursor: pointer;
+      user-select: none;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(250, 204, 21, 0.6);
+      background: rgba(255, 248, 235, 0.9);
+    }
+
+    body.dark .toggle {
+      border-color: rgba(82, 82, 91, 0.8);
+      background: rgba(10, 10, 10, 0.9);
+    }
+
+    .toggle input {
+      margin: 0;
+    }
+
+    /* Big clocks row */
+    .clocks-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+    }
+
+    .clock-card {
+      flex: 1 1 180px;
+      min-width: 0;
+      padding: 0.6rem 0.75rem;
+      border-radius: 14px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    body.dark .clock-card {
+      background: radial-gradient(circle at top, rgba(5, 5, 5, 0.96), rgba(9, 9, 9, 0.99));
+      box-shadow: 0 14px 26px rgba(0, 0, 0, 0.8);
+    }
+
+    .clock-label-top {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .clock-main-big {
+      font-variant-numeric: tabular-nums;
+      font-size: 1.2rem;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    .clock-meta-big {
+      font-size: 0.85rem;
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Search in main card */
+    .filters-row {
+      margin-top: 0.4rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.85rem;
+    }
+
+    .filter-field {
+      flex: 1 1 230px;
+    }
+
+    .filter-label {
+      display: block;
+      margin-bottom: 0.15rem;
+      color: var(--text-muted);
+    }
+
+    #search {
+      width: 100%;
+      padding: 0.4rem 0.7rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fffaf0;
+      color: var(--text);
+      font-size: 0.86rem;
+      outline: none;
+    }
+
+    #search::placeholder {
+      color: var(--text-muted);
+    }
+
+    body.dark #search {
+      background: rgba(8, 8, 8, 0.95);
+      border-color: #1f1f1f;
+    }
+
+    .filters-hint {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      max-width: 260px;
+    }
+
+    /* Pinned */
+    .pinned-wrapper {
+      margin-top: 0.4rem;
+      display: none;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .pinned-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .pinned-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--text-muted);
+    }
+
+    .pinned-clear-btn {
+      font-size: 0.78rem;
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .pinned-clear-btn:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .pinned-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+    }
+
+    .pinned-card {
+      flex: 1 1 180px;
+      min-width: 0;
+      font-size: 0.86rem;
+    }
+
+    .pinned-zone {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pinned-time {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pinned-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* Main panel (table) */
+    .main-panel {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: none; /* hidden by default */
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    body.show-table .main-panel {
+      display: flex;
+    }
+
+    .table-shell {
+      flex: 1 1 auto;
+      min-height: 0;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      overflow: hidden;
+    }
+
+    body.dark .table-shell {
+      background: radial-gradient(circle at top, rgba(5, 5, 5, 0.96), rgba(0, 0, 0, 0.99));
+    }
+
+    .table-scroll {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.86rem;
+      min-width: 680px;
+    }
+
+    caption {
+      text-align: left;
+      padding: 0.4rem 0.7rem;
+      font-weight: 500;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    th,
+    td {
+      padding: 0.35rem 0.65rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: var(--bg-header);
+      z-index: 1;
+      font-weight: 500;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    body.dark th {
+      background: #050505;
+    }
+
+    tbody tr:nth-child(even) {
+      background: var(--bg-row-alt);
+    }
+
+    body.dark tbody tr:nth-child(even) {
+      background: var(--bg-row-alt);
+    }
+
+    tbody tr:hover {
+      background: var(--accent-soft);
+    }
+
+    .pin-cell {
+      width: 2.1rem;
+      text-align: center;
+    }
+
+    .pin-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0;
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+
+    .pin-btn.pinned {
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .zone-flag {
+      font-size: 1rem;
+      margin-right: 0.25rem;
+    }
+    .zone-name {
+      font-weight: 500;
+    }
+    .zone-iso {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-left: 0.25rem;
+    }
+
+    .no-results {
+      text-align: center;
+      font-style: italic;
+      color: var(--text-muted);
+    }
+
+    .no-results td {
+      padding: 0.85rem 0.6rem;
+    }
+
+    @media (max-width: 760px) {
+      .app-shell {
+        padding: 0.7rem;
+      }
+
+      .card {
+        padding: 0.7rem 0.8rem;
+      }
+
+      .clocks-row {
+        flex-direction: column;
+      }
+
+      /* Hide Currency & Call on very small screens */
+      th:nth-child(7),
+      td:nth-child(7),
+      th:nth-child(8),
+      td:nth-child(8) {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <!-- Top card -->
+  <section class="card main-card" aria-label="Current time and pinned zones">
+    <header class="header-row">
+      <div>
+        <h1>World Clock</h1>
+        <span class="badge">Live · IANA time-zone database</span>
+      </div>
+      <div class="toggles">
+        <label class="toggle">
+          <input type="checkbox" id="format-toggle" checked>
+          <span>24-hour</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="theme-toggle">
+          <span>Dark</span>
+        </label>
+      </div>
+    </header>
+
+    <div class="clocks-row">
+      <div class="clock-card" aria-live="polite">
+        <div class="clock-label-top">Local</div>
+        <div class="clock-main-big" id="local-time"></div>
+        <div class="clock-meta-big" id="local-abbr"></div>
+      </div>
+      <div class="clock-card">
+        <div class="clock-label-top">UTC</div>
+        <div class="clock-main-big" id="utc-time"></div>
+        <div class="clock-meta-big">Coordinated Universal Time</div>
+      </div>
+      <div class="clock-card">
+        <div class="clock-label-top">Epoch</div>
+        <div class="clock-main-big" id="epoch-time"></div>
+        <div class="clock-meta-big">Unix seconds since 1970-01-01</div>
+      </div>
+    </div>
+
+    <!-- Pinned zones -->
+    <div class="pinned-wrapper" id="pinned-wrapper">
+      <div class="pinned-header-row">
+        <div class="pinned-title">Pinned zones</div>
+        <button type="button" class="pinned-clear-btn" id="clear-pins">Clear pinned</button>
+      </div>
+      <div class="pinned-grid" id="pinned-grid"></div>
+    </div>
+  </section>
+
+  <!-- Search and hint (always visible) -->
+  <div class="filters-row">
+    <div class="filter-field">
+      <label for="search" class="filter-label">Filter zones</label>
+      <input id="search" type="text"
+             placeholder="Search by city, abbreviation or offset (e.g. Tokyo, JST, +09)"
+             aria-label="Filter time zones">
+    </div>
+    <div class="filters-hint">
+      Start typing to show the world table.<br>
+      Click anywhere on this card to hide it again.
+    </div>
+  </div>
+  <!-- Main panel with table (hidden until search is active) -->
+  <section class="main-panel" aria-label="Time zones table">
+    <div class="table-shell" role="region" aria-label="World time zones">
+      <div class="table-scroll">
+        <table id="zones-table">
+          <caption>Current local time in all available IANA time zones</caption>
+          <thead>
+          <tr>
+            <th scope="col" class="pin-cell">📌</th>
+            <th scope="col">Zone</th>
+            <th scope="col">Abbr.</th>
+            <th scope="col">Offset</th>
+            <th scope="col">DST</th>
+            <th scope="col">Date &amp; Time</th>
+            <th scope="col">Currency</th>
+            <th scope="col">Call</th>
+          </tr>
+          </thead>
+          <tbody id="zones-tbody">
+          <tr id="no-results-row" class="no-results" style="display:none;">
+            <td colspan="8">No time zones match your search.</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+
+<noscript>
+  <p style="padding:1rem;color:#fff;background:#111;">
+    JavaScript is required to show the live world clock and time-zone table.
+  </p>
+</noscript>
+
+<script>
+  // ========= Country metadata (country -> flag, currency, phone) =========
+  const COUNTRY_META = {
+    US: { flag: "🇺🇸", currency: "USD", phone: "+1" },
+    MX: { flag: "🇲🇽", currency: "MXN", phone: "+52" },
+    CA: { flag: "🇨🇦", currency: "CAD", phone: "+1" },
+    BR: { flag: "🇧🇷", currency: "BRL", phone: "+55" },
+    AR: { flag: "🇦🇷", currency: "ARS", phone: "+54" },
+    CL: { flag: "🇨🇱", currency: "CLP", phone: "+56" },
+    PE: { flag: "🇵🇪", currency: "PEN", phone: "+51" },
+    CO: { flag: "🇨🇴", currency: "COP", phone: "+57" },
+    VE: { flag: "🇻🇪", currency: "VES", phone: "+58" },
+    UY: { flag: "🇺🇾", currency: "UYU", phone: "+598" },
+    PY: { flag: "🇵🇾", currency: "PYG", phone: "+595" },
+    BO: { flag: "🇧🇴", currency: "BOB", phone: "+591" },
+    EC: { flag: "🇪🇨", currency: "USD", phone: "+593" },
+    CR: { flag: "🇨🇷", currency: "CRC", phone: "+506" },
+    PA: { flag: "🇵🇦", currency: "PAB", phone: "+507" },
+    GT: { flag: "🇬🇹", currency: "GTQ", phone: "+502" },
+    HN: { flag: "🇭🇳", currency: "HNL", phone: "+504" },
+    NI: { flag: "🇳🇮", currency: "NIO", phone: "+505" },
+    SV: { flag: "🇸🇻", currency: "USD", phone: "+503" },
+    BZ: { flag: "🇧🇿", currency: "BZD", phone: "+501" },
+    DO: { flag: "🇩🇴", currency: "DOP", phone: "+1" },
+    CU: { flag: "🇨🇺", currency: "CUP", phone: "+53" },
+    JM: { flag: "🇯🇲", currency: "JMD", phone: "+1" },
+    PR: { flag: "🇵🇷", currency: "USD", phone: "+1" },
+
+    GB: { flag: "🇬🇧", currency: "GBP", phone: "+44" },
+    IE: { flag: "🇮🇪", currency: "EUR", phone: "+353" },
+    PT: { flag: "🇵🇹", currency: "EUR", phone: "+351" },
+    ES: { flag: "🇪🇸", currency: "EUR", phone: "+34" },
+    FR: { flag: "🇫🇷", currency: "EUR", phone: "+33" },
+    BE: { flag: "🇧🇪", currency: "EUR", phone: "+32" },
+    NL: { flag: "🇳🇱", currency: "EUR", phone: "+31" },
+    LU: { flag: "🇱🇺", currency: "EUR", phone: "+352" },
+    DE: { flag: "🇩🇪", currency: "EUR", phone: "+49" },
+    CH: { flag: "🇨🇭", currency: "CHF", phone: "+41" },
+    AT: { flag: "🇦🇹", currency: "EUR", phone: "+43" },
+    IT: { flag: "🇮🇹", currency: "EUR", phone: "+39" },
+    GR: { flag: "🇬🇷", currency: "EUR", phone: "+30" },
+    SE: { flag: "🇸🇪", currency: "SEK", phone: "+46" },
+    NO: { flag: "🇳🇴", currency: "NOK", phone: "+47" },
+    FI: { flag: "🇫🇮", currency: "EUR", phone: "+358" },
+    DK: { flag: "🇩🇰", currency: "DKK", phone: "+45" },
+    PL: { flag: "🇵🇱", currency: "PLN", phone: "+48" },
+    CZ: { flag: "🇨🇿", currency: "CZK", phone: "+420" },
+    HU: { flag: "🇭🇺", currency: "HUF", phone: "+36" },
+    RO: { flag: "🇷🇴", currency: "RON", phone: "+40" },
+    BG: { flag: "🇧🇬", currency: "BGN", phone: "+359" },
+
+    RU: { flag: "🇷🇺", currency: "RUB", phone: "+7" },
+    UA: { flag: "🇺🇦", currency: "UAH", phone: "+380" },
+    BY: { flag: "🇧🇾", currency: "BYN", phone: "+375" },
+    TR: { flag: "🇹🇷", currency: "TRY", phone: "+90" },
+
+    EG: { flag: "🇪🇬", currency: "EGP", phone: "+20" },
+    ZA: { flag: "🇿🇦", currency: "ZAR", phone: "+27" },
+    NG: { flag: "🇳🇬", currency: "NGN", phone: "+234" },
+    KE: { flag: "🇰🇪", currency: "KES", phone: "+254" },
+    MA: { flag: "🇲🇦", currency: "MAD", phone: "+212" },
+    DZ: { flag: "🇩🇿", currency: "DZD", phone: "+213" },
+    GH: { flag: "🇬🇭", currency: "GHS", phone: "+233" },
+    CI: { flag: "🇨🇮", currency: "XOF", phone: "+225" },
+
+    AE: { flag: "🇦🇪", currency: "AED", phone: "+971" },
+    SA: { flag: "🇸🇦", currency: "SAR", phone: "+966" },
+    QA: { flag: "🇶🇦", currency: "QAR", phone: "+974" },
+    KW: { flag: "🇰🇼", currency: "KWD", phone: "+965" },
+    OM: { flag: "🇴🇲", currency: "OMR", phone: "+968" },
+    IL: { flag: "🇮🇱", currency: "ILS", phone: "+972" },
+    JO: { flag: "🇯🇴", currency: "JOD", phone: "+962" },
+    LB: { flag: "🇱🇧", currency: "LBP", phone: "+961" },
+    IR: { flag: "🇮🇷", currency: "IRR", phone: "+98" },
+
+    IN: { flag: "🇮🇳", currency: "INR", phone: "+91" },
+    PK: { flag: "🇵🇰", currency: "PKR", phone: "+92" },
+    BD: { flag: "🇧🇩", currency: "BDT", phone: "+880" },
+    LK: { flag: "🇱🇰", currency: "LKR", phone: "+94" },
+    NP: { flag: "🇳🇵", currency: "NPR", phone: "+977" },
+
+    CN: { flag: "🇨🇳", currency: "CNY", phone: "+86" },
+    JP: { flag: "🇯🇵", currency: "JPY", phone: "+81" },
+    KR: { flag: "🇰🇷", currency: "KRW", phone: "+82" },
+    TW: { flag: "🇹🇼", currency: "TWD", phone: "+886" },
+    HK: { flag: "🇭🇰", currency: "HKD", phone: "+852" },
+    SG: { flag: "🇸🇬", currency: "SGD", phone: "+65" },
+    MY: { flag: "🇲🇾", currency: "MYR", phone: "+60" },
+    TH: { flag: "🇹🇭", currency: "THB", phone: "+66" },
+    VN: { flag: "🇻🇳", currency: "VND", phone: "+84" },
+    ID: { flag: "🇮🇩", currency: "IDR", phone: "+62" },
+    PH: { flag: "🇵🇭", currency: "PHP", phone: "+63" },
+
+    AU: { flag: "🇦🇺", currency: "AUD", phone: "+61" },
+    NZ: { flag: "🇳🇿", currency: "NZD", phone: "+64" },
+    FJ: { flag: "🇫🇯", currency: "FJD", phone: "+679" },
+    PG: { flag: "🇵🇬", currency: "PGK", phone: "+675" },
+
+    AQ: { flag: "🇦🇶", currency: "—",   phone: "—" },
+    // ...you can extend this table as needed
+  };
+
+  const TZ_TO_COUNTRY = {
+    // Americas (sample + key zones)
+    "America/Mexico_City": "MX",
+    "America/Bahia_Banderas": "MX",
+    "America/Tijuana": "MX",
+    "America/Cancun": "MX",
+    "America/Monterrey": "MX",
+    "America/Guadalajara": "MX",
+
+    "America/New_York": "US",
+    "America/Chicago": "US",
+    "America/Denver": "US",
+    "America/Los_Angeles": "US",
+    "America/Phoenix": "US",
+    "America/Anchorage": "US",
+    "Pacific/Honolulu": "US",
+
+    "America/Toronto": "CA",
+    "America/Vancouver": "CA",
+    "America/Winnipeg": "CA",
+    "America/Halifax": "CA",
+    "America/St_Johns": "CA",
+
+    "America/Sao_Paulo": "BR",
+    "America/Rio_Branco": "BR",
+    "America/Manaus": "BR",
+    "America/Bahia": "BR",
+    "America/Araguaina": "BR",
+    "America/Boa_Vista": "BR",
+
+    "America/Buenos_Aires": "AR",
+    "America/Argentina/Buenos_Aires": "AR",
+    "America/Argentina/Cordoba": "AR",
+    "America/Argentina/Mendoza": "AR",
+    "America/Argentina/Ushuaia": "AR",
+
+    "America/Santiago": "CL",
+    "America/Lima": "PE",
+    "America/Bogota": "CO",
+    "America/Caracas": "VE",
+    "America/La_Paz": "BO",
+    "America/Montevideo": "UY",
+    "America/Asuncion": "PY",
+    "America/Guayaquil": "EC",
+
+    // Europe (key zones)
+    "Europe/London": "GB",
+    "Europe/Dublin": "IE",
+    "Europe/Lisbon": "PT",
+    "Atlantic/Azores": "PT",
+    "Europe/Madrid": "ES",
+    "Europe/Paris": "FR",
+    "Europe/Brussels": "BE",
+    "Europe/Amsterdam": "NL",
+    "Europe/Berlin": "DE",
+    "Europe/Rome": "IT",
+    "Europe/Athens": "GR",
+    "Europe/Stockholm": "SE",
+    "Europe/Oslo": "NO",
+    "Europe/Helsinki": "FI",
+    "Europe/Copenhagen": "DK",
+    "Europe/Prague": "CZ",
+    "Europe/Warsaw": "PL",
+    "Europe/Budapest": "HU",
+    "Europe/Bucharest": "RO",
+    "Europe/Sofia": "BG",
+    "Europe/Moscow": "RU",
+    "Europe/Kyiv": "UA",
+
+    // Africa / Middle East (key zones)
+    "Africa/Cairo": "EG",
+    "Africa/Johannesburg": "ZA",
+    "Africa/Lagos": "NG",
+    "Africa/Nairobi": "KE",
+    "Africa/Casablanca": "MA",
+    "Africa/Algiers": "DZ",
+    "Africa/Accra": "GH",
+    "Africa/Abidjan": "CI",
+
+    "Asia/Dubai": "AE",
+    "Asia/Riyadh": "SA",
+    "Asia/Doha": "QA",
+    "Asia/Kuwait": "KW",
+    "Asia/Tehran": "IR",
+    "Asia/Jerusalem": "IL",
+    "Asia/Amman": "JO",
+    "Asia/Beirut": "LB",
+
+    // Asia (key zones)
+    "Asia/Kolkata": "IN",
+    "Asia/Karachi": "PK",
+    "Asia/Dhaka": "BD",
+    "Asia/Colombo": "LK",
+    "Asia/Kathmandu": "NP",
+
+    "Asia/Shanghai": "CN",
+    "Asia/Tokyo": "JP",
+    "Asia/Seoul": "KR",
+    "Asia/Taipei": "TW",
+    "Asia/Hong_Kong": "HK",
+    "Asia/Singapore": "SG",
+    "Asia/Bangkok": "TH",
+    "Asia/Ho_Chi_Minh": "VN",
+    "Asia/Jakarta": "ID",
+    "Asia/Manila": "PH",
+    "Asia/Kuala_Lumpur": "MY",
+
+    // Oceania
+    "Australia/Sydney": "AU",
+    "Australia/Melbourne": "AU",
+    "Australia/Brisbane": "AU",
+    "Australia/Perth": "AU",
+    "Australia/Adelaide": "AU",
+    "Australia/Darwin": "AU",
+    "Australia/Hobart": "AU",
+
+    "Pacific/Auckland": "NZ",
+    "Pacific/Chatham": "NZ",
+    "Pacific/Fiji": "FJ",
+    "Pacific/Port_Moresby": "PG",
+
+    // Antarctica (generic AQ)
+    "Antarctica/McMurdo": "AQ",
+    "Antarctica/Palmer": "AQ",
+    "Antarctica/Rothera": "AQ"
+    // You can extend TZ_TO_COUNTRY with all zones you want;
+    // everything else will use META_FALLBACK.
+  };
+
+  const META_FALLBACK = { country: "", flag: "", currency: "—", phone: "—" };
+
+  function getTimeZoneMeta(tz) {
+    const code = TZ_TO_COUNTRY[tz];
+    if (!code) return META_FALLBACK;
+    const cMeta = COUNTRY_META[code];
+    if (!cMeta) return META_FALLBACK;
+    return { country: code, flag: cMeta.flag, currency: cMeta.currency, phone: cMeta.phone };
+  }
+
+  // ---------- Helpers ----------
+  const pad = n => n.toString().padStart(2, "0");
+
+  const formatLocal = d =>
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+    `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
+  const formatUTC = d =>
+    `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ` +
+    `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+
+  function getAbbrev(tz, date) {
+    const options = {
+      timeZone: tz,
+      hour12: false,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZoneName: "short"
+    };
+    const parts = new Intl.DateTimeFormat("en-US", options).formatToParts(date);
+    const namePart = parts.find(p => p.type === "timeZoneName");
+    return namePart ? namePart.value : "";
+  }
+
+  function getOffsetHours(tz, date) {
+    const utc = new Date(date.toLocaleString("en-US", { timeZone: "UTC" }));
+    const local = new Date(date.toLocaleString("en-US", { timeZone: tz }));
+    const diffMin = (local - utc) / 60000;
+    return diffMin / 60;
+  }
+
+  function debounce(fn, delay) {
+    let t;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), delay);
+    };
+  }
+
+  // ---------- DOM refs ----------
+  const body = document.body;
+
+  const localSpan = document.getElementById("local-time");
+  const localAbbrSpan = document.getElementById("local-abbr");
+  const utcSpan = document.getElementById("utc-time");
+  const epochSpan = document.getElementById("epoch-time");
+
+  const tbody = document.getElementById("zones-tbody");
+  const noRow = document.getElementById("no-results-row");
+  const searchInput = document.getElementById("search");
+  const formatToggle = document.getElementById("format-toggle");
+  const themeToggle = document.getElementById("theme-toggle");
+
+  const pinnedWrapper = document.getElementById("pinned-wrapper");
+  const pinnedGrid = document.getElementById("pinned-grid");
+  const clearPinsBtn = document.getElementById("clear-pins");
+  const mainCard = document.querySelector(".main-card");
+
+  const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
+  let use24h = true;
+  let zones = [];
+  let zoneRows = [];
+
+  const formatters = new Map();
+  let lastOffsetUpdateKey = "";
+
+  const PIN_KEY = "worldclock_pins";
+  let pinnedSet = new Set();
+
+  const THEME_KEY = "worldclock_theme";
+
+  // ---------- theme ----------
+  function loadTheme() {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === "dark") {
+      body.classList.add("dark");
+      themeToggle.checked = true;
+    } else {
+      body.classList.remove("dark");
+      themeToggle.checked = false;
+    }
+  }
+
+  function saveTheme(mode) {
+    localStorage.setItem(THEME_KEY, mode);
+  }
+
+  themeToggle.addEventListener("change", () => {
+    if (themeToggle.checked) {
+      body.classList.add("dark");
+      saveTheme("dark");
+    } else {
+      body.classList.remove("dark");
+      saveTheme("moe");
+    }
+  });
+
+  // ---------- table show/hide UX ----------
+  function showTable() {
+    body.classList.add("show-table");
+  }
+
+  function hideTable() {
+    body.classList.remove("show-table");
+  }
+
+  searchInput.addEventListener("focus", showTable);
+  searchInput.addEventListener("click", showTable);
+
+  mainCard.addEventListener("click", (e) => {
+    if (!body.classList.contains("show-table")) return;
+    if (e.target.closest("#search")) return; // don't hide when interacting with search
+    hideTable();
+  });
+
+  // ---------- pinned ----------
+  function loadPinned() {
+    try {
+      const stored = localStorage.getItem(PIN_KEY);
+      if (stored) {
+        const arr = JSON.parse(stored);
+        if (Array.isArray(arr)) {
+          pinnedSet = new Set(arr);
+        }
+      }
+    } catch (_) {}
+  }
+
+  function savePinned() {
+    localStorage.setItem(PIN_KEY, JSON.stringify(Array.from(pinnedSet)));
+  }
+
+  function renderPinned(now) {
+    if (pinnedSet.size === 0) {
+      pinnedWrapper.style.display = "none";
+      pinnedGrid.innerHTML = "";
+      return;
+    }
+    pinnedWrapper.style.display = "flex";
+    pinnedGrid.innerHTML = "";
+
+    const fragment = document.createDocumentFragment();
+
+    Array.from(pinnedSet).forEach(tz => {
+      const meta = getTimeZoneMeta(tz);
+      const fmt = formatters.get(tz);
+      const timeStr = fmt ? fmt.format(now) : "";
+      const offsetHours = getOffsetHours(tz, now);
+      const sign = offsetHours >= 0 ? "+" : "-";
+      const abs = Math.abs(offsetHours);
+      const offsetLabel = `${sign}${pad(Math.floor(abs))}:${pad(Math.round((abs % 1) * 60))}`;
+
+      const card = document.createElement("div");
+      card.className = "clock-card pinned-card";
+
+      const title = document.createElement("div");
+      title.className = "pinned-zone";
+      title.textContent = `${meta.flag || ""} ${tz}${meta.country ? " · " + meta.country : ""}`;
+
+      const time = document.createElement("div");
+      time.className = "pinned-time";
+      time.textContent = timeStr;
+
+      const metaEl = document.createElement("div");
+      metaEl.className = "pinned-meta";
+      metaEl.textContent = `UTC${offsetLabel} · ${meta.currency || "—"} · ${meta.phone || "—"}`;
+
+      card.appendChild(title);
+      card.appendChild(time);
+      card.appendChild(metaEl);
+
+      fragment.appendChild(card);
+    });
+
+    pinnedGrid.appendChild(fragment);
+  }
+
+  function togglePinned(tz) {
+    if (pinnedSet.has(tz)) {
+      pinnedSet.delete(tz);
+    } else {
+      pinnedSet.add(tz);
+    }
+    savePinned();
+    updatePinButtons();
+    renderPinned(new Date());
+  }
+
+  function updatePinButtons() {
+    zoneRows.forEach(z => {
+      const isPinned = pinnedSet.has(z.tz);
+      if (isPinned) {
+        z.pinBtn.classList.add("pinned");
+        z.pinBtn.textContent = "📌";
+      } else {
+        z.pinBtn.classList.remove("pinned");
+        z.pinBtn.textContent = "📍";
+      }
+    });
+  }
+
+  function clearPinned() {
+    if (pinnedSet.size === 0) return;
+    pinnedSet.clear();
+    savePinned();
+    updatePinButtons();
+    renderPinned(new Date());
+  }
+
+  clearPinsBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    clearPinned();
+  });
+
+  // ---------- zones & table ----------
+  function initZones() {
+    try {
+      zones = Intl.supportedValuesOf("timeZone");
+    } catch (e) {
+      zones = [
+        "Africa/Cairo",
+        "America/Mexico_City",
+        "America/New_York",
+        "Asia/Tokyo",
+        "Europe/London",
+        "Pacific/Auckland"
+      ];
+    }
+
+    if (noRow) {
+      tbody.removeChild(noRow);
+    }
+
+    const fragment = document.createDocumentFragment();
+    zoneRows = [];
+
+    zones.forEach(tz => {
+      const tr = document.createElement("tr");
+
+      const tdPin = document.createElement("td");
+      tdPin.className = "pin-cell";
+      const pinBtn = document.createElement("button");
+      pinBtn.type = "button";
+      pinBtn.className = "pin-btn";
+      pinBtn.textContent = "📍";
+      pinBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        togglePinned(tz);
+      });
+      tdPin.appendChild(pinBtn);
+
+      const tdZone = document.createElement("td");
+      const tdAbbr = document.createElement("td");
+      const tdOffset = document.createElement("td");
+      const tdDst = document.createElement("td");
+      const tdTime = document.createElement("td");
+      const tdCurr = document.createElement("td");
+      const tdCall = document.createElement("td");
+
+      const meta = getTimeZoneMeta(tz);
+      const flagSpan = meta.flag ? `<span class="zone-flag">${meta.flag}</span>` : "";
+      const isoSpan = meta.country ? `<span class="zone-iso">${meta.country}</span>` : "";
+      tdZone.innerHTML = `${flagSpan}<span class="zone-name">${tz}</span>${isoSpan}`;
+
+      tdCurr.textContent = meta.currency || "—";
+      tdCall.textContent = meta.phone || "—";
+
+      tr.appendChild(tdPin);
+      tr.appendChild(tdZone);
+      tr.appendChild(tdAbbr);
+      tr.appendChild(tdOffset);
+      tr.appendChild(tdDst);
+      tr.appendChild(tdTime);
+      tr.appendChild(tdCurr);
+      tr.appendChild(tdCall);
+
+      fragment.appendChild(tr);
+
+      zoneRows.push({
+        tz,
+        row: tr,
+        pinBtn,
+        abbrCell: tdAbbr,
+        offsetCell: tdOffset,
+        dstCell: tdDst,
+        timeCell: tdTime,
+        currencyCell: tdCurr,
+        callCell: tdCall
+      });
+    });
+
+    tbody.appendChild(fragment);
+    if (noRow) {
+      tbody.appendChild(noRow);
+    }
+
+    rebuildFormatters();
+    refreshOffsets(new Date());
+    updatePinButtons();
+  }
+
+  function rebuildFormatters() {
+    formatters.clear();
+    zones.forEach(tz => {
+      formatters.set(
+        tz,
+        new Intl.DateTimeFormat(undefined, {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: !use24h,
+          timeZone: tz
+        })
+      );
+    });
+  }
+
+  function refreshOffsets(now) {
+    const key = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}-${now.getUTCHours()}`;
+    if (key === lastOffsetUpdateKey) return;
+    lastOffsetUpdateKey = key;
+
+    const jan = new Date(now.getFullYear(), 0, 15, 12, 0, 0);
+    const jul = new Date(now.getFullYear(), 6, 15, 12, 0, 0);
+
+    zoneRows.forEach(z => {
+      const abbrev = getAbbrev(z.tz, now);
+      const offsetHours = getOffsetHours(z.tz, now);
+      const sign = offsetHours >= 0 ? "+" : "-";
+      const abs = Math.abs(offsetHours);
+      const displayOffset = `${sign}${abs.toFixed(2)}`;
+      const offsetSearch = `${sign}${pad(Math.floor(abs))}`;
+
+      z.abbrCell.textContent = abbrev;
+      z.offsetCell.textContent = displayOffset;
+
+      let dstLabel = "No DST";
+      try {
+        const janOff = getOffsetHours(z.tz, jan);
+        const julOff = getOffsetHours(z.tz, jul);
+        if (Math.abs(janOff - julOff) < 1e-6) {
+          dstLabel = "No DST";
+        } else {
+          const maxOff = Math.max(janOff, julOff);
+          if (Math.abs(offsetHours - maxOff) < 1e-6) {
+            dstLabel = "DST on";
+          } else {
+            dstLabel = "DST off";
+          }
+        }
+      } catch (e) {
+        dstLabel = "—";
+      }
+      z.dstCell.textContent = dstLabel;
+
+      z.row.dataset.zoneText = z.tz.toLowerCase();
+      z.row.dataset.abbrText = abbrev.toLowerCase();
+      z.row.dataset.offsetText = offsetSearch;
+    });
+  }
+
+  function updateClockRowTimes(now) {
+    zoneRows.forEach(z => {
+      const fmt = formatters.get(z.tz);
+      z.timeCell.textContent = fmt ? fmt.format(now) : "";
+    });
+  }
+
+  // ---------- search / filter ----------
+  function applyFilter() {
+    const q = searchInput.value.trim().toLowerCase();
+    let visible = 0;
+
+    zoneRows.forEach(z => {
+      const zone = z.row.dataset.zoneText || "";
+      const abbr = z.row.dataset.abbrText || "";
+      const offset = z.row.dataset.offsetText || "";
+
+      const match =
+        !q ||
+        zone.includes(q) ||
+        abbr.includes(q) ||
+        offset.includes(q);
+
+      z.row.style.display = match ? "" : "none";
+      if (match) visible++;
+    });
+
+    if (noRow) {
+      noRow.style.display = visible === 0 ? "" : "none";
+    }
+  }
+
+  const debouncedFilter = debounce(applyFilter, 200);
+  searchInput.addEventListener("input", () => {
+    showTable();
+    debouncedFilter();
+  });
+
+  // ---------- 12/24h toggle ----------
+  formatToggle.addEventListener("change", () => {
+    use24h = formatToggle.checked;
+    rebuildFormatters();
+    const now = new Date();
+    updateClockRowTimes(now);
+    renderPinned(now);
+  });
+
+  // ---------- main tick ----------
+  function tick() {
+    const now = new Date();
+
+    localSpan.textContent = formatLocal(now);
+    utcSpan.textContent = formatUTC(now);
+    epochSpan.textContent = Math.floor(now.getTime() / 1000);
+
+    const localAbbrev = getAbbrev(LOCAL_TZ, now);
+    localAbbrSpan.textContent = `${LOCAL_TZ} · ${localAbbrev}`;
+
+    refreshOffsets(now);
+    updateClockRowTimes(now);
+    renderPinned(now);
+  }
+
+  // ---------- boot ----------
+  (function init() {
+    loadTheme();
+    loadPinned();
+    initZones();
+    applyFilter();
+    tick();
+    setInterval(tick, 1000);
+  })();
+</script>
+</body>
+</html>
