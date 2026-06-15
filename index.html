@@ -2,115 +2,110 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>World Clock – Time Zones</title>
+  <title>World Clock — Carino Systems</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500;700&family=Red+Hat+Display:wght@700;900&display=swap" rel="stylesheet">
 
   <style>
     :root {
-      /* Moe (light) theme – beige/yellow side */
-      --bg: #fff7e6;
-      --bg-elevated: #fffaf0;
-      --bg-panel: #fff8eb;
-      --bg-header: #ffefc2;
-      --bg-row-alt: #fff3d7;
-
-      --text: #3b2f1a;
-      --text-muted: #9a7b32;
-
-      --border: #fcd9a6;
-      --accent: #f97316;
-      --accent-soft: rgba(249, 115, 22, 0.15);
-      --danger: #dc2626;
-
-      --shadow-soft: 0 18px 40px rgba(250, 204, 21, 0.3);
+      --bg:          #050505;
+      --bg-elevated: #0a0a0a;
+      --bg-panel:    #0a0a0a;
+      --bg-header:   #050505;
+      --bg-row-alt:  #0d0d0d;
+      --text:        #ffffff;
+      --text-muted:  #a3a3a3;
+      --border:      #1f1f1f;
+      --accent:      #eab308;
+      --accent-soft: rgba(234,179,8,0.08);
+      --accent-dim:  rgba(234,179,8,0.3);
+      --danger:      #ef4444;
+      --shadow-soft: 0 18px 40px rgba(0,0,0,0.8);
     }
 
-    body.dark {
-      /* Pitch-black dark theme */
-      --bg: #000000;
-      --bg-elevated: #020202;
-      --bg-panel: #050505;
-      --bg-header: #050505;
-      --bg-row-alt: #080808;
-
-      --text: #ffffff;
-      --text-muted: #a1a1aa;
-
-      --border: #1f1f1f;
-      --accent: #38bdf8;
-      --accent-soft: rgba(56, 189, 248, 0.14);
-      --danger: #f97373;
-
-      --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.9);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
 
     body {
       display: flex;
-      justify-content: center;
-      align-items: stretch;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at top left, #ffeec7 0, transparent 55%),
-        radial-gradient(circle at bottom right, #ffe4b5 0, transparent 55%),
-        var(--bg);
+      flex-direction: column;
+      font-family: 'IBM Plex Sans', sans-serif;
+      background: var(--bg);
       color: var(--text);
       font-size: 15px;
     }
 
-    body.dark {
-      background:
-        radial-gradient(circle at top left, #020617 0, transparent 55%),
-        radial-gradient(circle at bottom right, #000000 0, transparent 55%),
-        var(--bg);
+    /* ─── CS HEADER ─────────────────────────────────────────── */
+    .cs-header {
+      height: 70px; flex-shrink: 0;
+      background: linear-gradient(180deg, #0f0f0f 0%, #050505 100%);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; gap: 12px; z-index: 100;
+    }
+    .cs-left { display: flex; align-items: center; gap: 14px; }
+    .cs-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .cs-page-name {
+      font-family: 'Red Hat Display', sans-serif;
+      font-size: 1.4rem; font-weight: 900; line-height: 1;
+      background: linear-gradient(130deg, #fef08a 0%, #eab308 50%, #b45309 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      white-space: nowrap;
+    }
+    .cs-info { display: flex; align-items: baseline; gap: 10px; border-left: 1px solid var(--border); padding-left: 14px; }
+    .cs-info-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+    .cs-info-desc  { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: #555; white-space: nowrap; }
+    .cs-icon-btn {
+      width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      color: #555; transition: 0.2s; text-decoration: none; background: transparent; cursor: pointer;
+    }
+    .cs-icon-btn:hover { border-color: var(--accent); color: #050505; background: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(234,179,8,0.15); }
+    .cs-icon-btn svg { width: 15px; height: 15px; }
+
+    /* 24h toggle in header */
+    .cs-toggle {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      cursor: pointer; user-select: none;
+      padding: 0.2rem 0.7rem; border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      transition: 0.15s;
+    }
+    .cs-toggle:hover { border-color: var(--accent-dim); color: var(--accent); }
+    .cs-toggle input { margin: 0; accent-color: var(--accent); }
+
+    /* ─── CONTENT WRAP ───────────────────────────────────────── */
+    .content-wrap {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 0;
+      overflow: auto;
     }
 
     .app-shell {
       width: 100%;
       max-width: 1040px;
-      height: 100vh;
-      padding: 1rem 1rem 0.85rem;
+      padding: 0.85rem 1rem;
       display: flex;
       flex-direction: column;
       gap: 0.85rem;
-      justify-content: center; /* center when table hidden */
-    }
-
-    body.show-table .app-shell {
-      justify-content: flex-start; /* normal layout when table is visible */
     }
 
     .card {
-      background: linear-gradient(135deg, rgba(255, 250, 240, 0.98), rgba(255, 239, 194, 0.98));
-      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(10,10,10,0.98), rgba(18,18,18,0.98));
+      border-radius: 12px;
       border: 1px solid var(--border);
       box-shadow: var(--shadow-soft);
       padding: 0.9rem 1rem;
       display: flex;
       flex-direction: column;
       gap: 0.6rem;
-    }
-
-    body.dark .card {
-      background: linear-gradient(135deg, rgba(5, 5, 5, 0.98), rgba(15, 15, 15, 0.98));
-    }
-
-    .main-card {
-      cursor: pointer; /* used to hide table on click */
-    }
-
-    .main-card * {
-      cursor: auto;
     }
 
     .header-row {
@@ -122,48 +117,22 @@
 
     h1 {
       margin: 0;
-      font-size: 1.25rem;
-      letter-spacing: 0.06em;
+      font-size: 0.9rem;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 700;
       color: var(--text-muted);
     }
 
     .badge {
-      font-size: 0.75rem;
-      padding: 0.15rem 0.5rem;
-      border-radius: 999px;
+      font-size: 0.68rem;
+      font-family: 'IBM Plex Mono', monospace;
+      padding: 0.15rem 0.6rem;
+      border-radius: 4px;
       background: var(--accent-soft);
       color: var(--accent);
-      border: 1px solid rgba(249, 115, 22, 0.5);
-    }
-
-    .toggles {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    .toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      cursor: pointer;
-      user-select: none;
-      padding: 0.2rem 0.6rem;
-      border-radius: 999px;
-      border: 1px solid rgba(250, 204, 21, 0.6);
-      background: rgba(255, 248, 235, 0.9);
-    }
-
-    body.dark .toggle {
-      border-color: rgba(82, 82, 91, 0.8);
-      background: rgba(10, 10, 10, 0.9);
-    }
-
-    .toggle input {
-      margin: 0;
+      border: 1px solid var(--accent-dim);
     }
 
     /* Big clocks row */
@@ -176,44 +145,42 @@
     .clock-card {
       flex: 1 1 180px;
       min-width: 0;
-      padding: 0.6rem 0.75rem;
-      border-radius: 14px;
+      padding: 0.7rem 0.85rem;
+      border-radius: 8px;
       background: var(--bg-panel);
       border: 1px solid var(--border);
-      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.04);
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
     }
 
-    body.dark .clock-card {
-      background: radial-gradient(circle at top, rgba(5, 5, 5, 0.96), rgba(9, 9, 9, 0.99));
-      box-shadow: 0 14px 26px rgba(0, 0, 0, 0.8);
-    }
-
     .clock-label-top {
-      font-size: 0.8rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       color: var(--text-muted);
     }
 
     .clock-main-big {
+      font-family: 'IBM Plex Mono', monospace;
       font-variant-numeric: tabular-nums;
-      font-size: 1.2rem;
-      font-weight: 600;
+      font-size: 1.15rem;
+      font-weight: 700;
       line-height: 1.2;
+      color: var(--text);
     }
 
     .clock-meta-big {
-      font-size: 0.85rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.72rem;
       color: var(--accent);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    /* Search in main card */
+    /* Search */
     .filters-row {
       margin-top: 0.4rem;
       display: flex;
@@ -223,40 +190,39 @@
       font-size: 0.85rem;
     }
 
-    .filter-field {
-      flex: 1 1 230px;
-    }
+    .filter-field { flex: 1 1 230px; }
 
     .filter-label {
       display: block;
-      margin-bottom: 0.15rem;
+      margin-bottom: 0.2rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
       color: var(--text-muted);
     }
 
     #search {
       width: 100%;
-      padding: 0.4rem 0.7rem;
-      border-radius: 999px;
+      padding: 0.45rem 0.8rem;
+      border-radius: 6px;
       border: 1px solid var(--border);
-      background: #fffaf0;
+      background: rgba(8,8,8,0.95);
       color: var(--text);
-      font-size: 0.86rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.82rem;
       outline: none;
+      transition: border-color 0.2s;
     }
-
-    #search::placeholder {
-      color: var(--text-muted);
-    }
-
-    body.dark #search {
-      background: rgba(8, 8, 8, 0.95);
-      border-color: #1f1f1f;
-    }
+    #search:focus { border-color: var(--accent); }
+    #search::placeholder { color: var(--text-muted); }
 
     .filters-hint {
       color: var(--text-muted);
-      font-size: 0.8rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
       max-width: 260px;
+      line-height: 1.5;
     }
 
     /* Pinned */
@@ -275,32 +241,29 @@
     }
 
     .pinned-title {
-      font-size: 0.78rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
       text-transform: uppercase;
-      letter-spacing: 0.09em;
+      letter-spacing: 0.1em;
       color: var(--text-muted);
     }
 
     .pinned-clear-btn {
-      font-size: 0.78rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
       padding: 0.15rem 0.6rem;
-      border-radius: 999px;
+      border-radius: 4px;
       border: 1px solid var(--border);
       background: transparent;
       color: var(--text-muted);
       cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      transition: 0.15s;
     }
+    .pinned-clear-btn:hover { border-color: var(--danger); color: var(--danger); }
 
-    .pinned-clear-btn:hover {
-      border-color: var(--danger);
-      color: var(--danger);
-    }
-
-    .pinned-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.7rem;
-    }
+    .pinned-grid { display: flex; flex-wrap: wrap; gap: 0.7rem; }
 
     .pinned-card {
       flex: 1 1 180px;
@@ -308,72 +271,48 @@
       font-size: 0.86rem;
     }
 
-    .pinned-zone {
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    .pinned-zone { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pinned-time { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+    .pinned-meta { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: var(--text-muted); }
 
-    .pinned-time {
-      font-variant-numeric: tabular-nums;
-    }
-
-    .pinned-meta {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-    }
-
-    /* Main panel (table) */
+    /* Table panel */
     .main-panel {
-      flex: 1 1 auto;
-      min-height: 0;
-      display: none; /* hidden by default */
+      display: flex;
       flex-direction: column;
       gap: 0.5rem;
     }
 
-    body.show-table .main-panel {
-      display: flex;
-    }
-
     .table-shell {
-      flex: 1 1 auto;
-      min-height: 0;
-      border-radius: 14px;
+      border-radius: 8px;
       border: 1px solid var(--border);
       background: var(--bg-elevated);
       overflow: hidden;
     }
 
-    body.dark .table-shell {
-      background: radial-gradient(circle at top, rgba(5, 5, 5, 0.96), rgba(0, 0, 0, 0.99));
-    }
-
-    .table-scroll {
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-    }
+    /* Capped height: the table scrolls internally instead of pushing the page. */
+    .table-scroll { width: 100%; max-height: min(560px, 60vh); overflow: auto; }
+    .table-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+    .table-scroll::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
 
     table {
       border-collapse: collapse;
       width: 100%;
-      font-size: 0.86rem;
+      font-size: 0.82rem;
       min-width: 680px;
+      font-family: 'IBM Plex Mono', monospace;
     }
 
     caption {
       text-align: left;
       padding: 0.4rem 0.7rem;
-      font-weight: 500;
-      font-size: 0.82rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
       border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
     }
 
-    th,
-    td {
+    th, td {
       padding: 0.35rem 0.65rem;
       text-align: left;
       border-bottom: 1px solid var(--border);
@@ -385,31 +324,17 @@
       top: 0;
       background: var(--bg-header);
       z-index: 1;
-      font-weight: 500;
-      font-size: 0.8rem;
+      font-weight: 700;
+      font-size: 0.7rem;
       color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
-    body.dark th {
-      background: #050505;
-    }
+    tbody tr:nth-child(even) { background: var(--bg-row-alt); }
+    tbody tr:hover { background: var(--accent-soft); }
 
-    tbody tr:nth-child(even) {
-      background: var(--bg-row-alt);
-    }
-
-    body.dark tbody tr:nth-child(even) {
-      background: var(--bg-row-alt);
-    }
-
-    tbody tr:hover {
-      background: var(--accent-soft);
-    }
-
-    .pin-cell {
-      width: 2.1rem;
-      text-align: center;
-    }
+    .pin-cell { width: 2.1rem; text-align: center; }
 
     .pin-btn {
       border: none;
@@ -419,77 +344,62 @@
       padding: 0;
       font-size: 1.1rem;
       line-height: 1;
+      transition: transform 0.15s;
     }
+    .pin-btn.pinned { color: var(--accent); transform: translateY(-1px); }
 
-    .pin-btn.pinned {
-      color: var(--accent);
-      transform: translateY(-1px);
-    }
+    .zone-flag  { font-size: 1rem; margin-right: 0.25rem; }
+    .zone-name  { font-weight: 600; }
+    .zone-iso   { font-size: 0.72rem; color: var(--text-muted); margin-left: 0.25rem; }
 
-    .zone-flag {
-      font-size: 1rem;
-      margin-right: 0.25rem;
-    }
-    .zone-name {
-      font-weight: 500;
-    }
-    .zone-iso {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-left: 0.25rem;
-    }
-
-    .no-results {
-      text-align: center;
-      font-style: italic;
-      color: var(--text-muted);
-    }
-
-    .no-results td {
-      padding: 0.85rem 0.6rem;
-    }
+    .no-results { text-align: center; font-style: italic; color: var(--text-muted); }
+    .no-results td { padding: 0.85rem 0.6rem; }
 
     @media (max-width: 760px) {
-      .app-shell {
-        padding: 0.7rem;
-      }
-
-      .card {
-        padding: 0.7rem 0.8rem;
-      }
-
-      .clocks-row {
-        flex-direction: column;
-      }
-
-      /* Hide Currency & Call on very small screens */
-      th:nth-child(7),
-      td:nth-child(7),
-      th:nth-child(8),
-      td:nth-child(8) {
-        display: none;
-      }
+      .app-shell { padding: 0.7rem; }
+      .card { padding: 0.7rem 0.8rem; }
+      .clocks-row { flex-direction: column; }
+      .cs-info-desc { display: none; }
+      th:nth-child(7), td:nth-child(7),
+      th:nth-child(8), td:nth-child(8) { display: none; }
     }
   </style>
 </head>
 <body>
+
+<header class="cs-header">
+  <div class="cs-left">
+    <a href="https://carino.systems" class="cs-icon-btn" title="Carino Systems">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    </a>
+    <span class="cs-page-name">WorldClock</span>
+    <div class="cs-info">
+      <span class="cs-info-title">World Clock</span>
+      <span class="cs-info-desc">Live IANA Time Zone Database</span>
+    </div>
+  </div>
+  <div class="cs-right">
+    <label class="cs-toggle">
+      <input type="checkbox" id="format-toggle" checked>
+      <span>24h</span>
+    </label>
+    <a href="https://github.com/MiguelCarino" target="_blank" class="cs-icon-btn" title="GitHub">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/miguelcarino94/" target="_blank" class="cs-icon-btn" title="LinkedIn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+    </a>
+  </div>
+</header>
+
+<div class="content-wrap">
 <div class="app-shell">
   <!-- Top card -->
   <section class="card main-card" aria-label="Current time and pinned zones">
     <header class="header-row">
       <div>
         <h1>World Clock</h1>
-        <span class="badge">Live · IANA time-zone database</span>
-      </div>
-      <div class="toggles">
-        <label class="toggle">
-          <input type="checkbox" id="format-toggle" checked>
-          <span>24-hour</span>
-        </label>
-        <label class="toggle">
-          <input type="checkbox" id="theme-toggle">
-          <span>Dark</span>
-        </label>
+        <span class="badge">Live — IANA time-zone database</span>
       </div>
     </header>
 
@@ -521,7 +431,7 @@
     </div>
   </section>
 
-  <!-- Search and hint (always visible) -->
+  <!-- Search and hint -->
   <div class="filters-row">
     <div class="filter-field">
       <label for="search" class="filter-label">Filter zones</label>
@@ -530,11 +440,11 @@
              aria-label="Filter time zones">
     </div>
     <div class="filters-hint">
-      Start typing to show the world table.<br>
-      Click anywhere on this card to hide it again.
+      Filters the table below by city, abbreviation or offset.<br>
+      Pin a zone with 📍 to keep it at the top.
     </div>
   </div>
-  <!-- Main panel with table (hidden until search is active) -->
+  <!-- Main panel with table (always visible; capped height, scrolls internally) -->
   <section class="main-panel" aria-label="Time zones table">
     <div class="table-shell" role="region" aria-label="World time zones">
       <div class="table-scroll">
@@ -562,6 +472,7 @@
     </div>
   </section>
 </div>
+</div>
 
 <noscript>
   <p style="padding:1rem;color:#fff;background:#111;">
@@ -571,233 +482,806 @@
 
 <script>
   // ========= Country metadata (country -> flag, currency, phone) =========
+  // Complete ISO 3166-1 set. Currency = ISO 4217 (CLDR/Babel), phone = E.164 calling code.
   const COUNTRY_META = {
-    US: { flag: "🇺🇸", currency: "USD", phone: "+1" },
-    MX: { flag: "🇲🇽", currency: "MXN", phone: "+52" },
-    CA: { flag: "🇨🇦", currency: "CAD", phone: "+1" },
-    BR: { flag: "🇧🇷", currency: "BRL", phone: "+55" },
-    AR: { flag: "🇦🇷", currency: "ARS", phone: "+54" },
-    CL: { flag: "🇨🇱", currency: "CLP", phone: "+56" },
-    PE: { flag: "🇵🇪", currency: "PEN", phone: "+51" },
-    CO: { flag: "🇨🇴", currency: "COP", phone: "+57" },
-    VE: { flag: "🇻🇪", currency: "VES", phone: "+58" },
-    UY: { flag: "🇺🇾", currency: "UYU", phone: "+598" },
-    PY: { flag: "🇵🇾", currency: "PYG", phone: "+595" },
-    BO: { flag: "🇧🇴", currency: "BOB", phone: "+591" },
-    EC: { flag: "🇪🇨", currency: "USD", phone: "+593" },
-    CR: { flag: "🇨🇷", currency: "CRC", phone: "+506" },
-    PA: { flag: "🇵🇦", currency: "PAB", phone: "+507" },
-    GT: { flag: "🇬🇹", currency: "GTQ", phone: "+502" },
-    HN: { flag: "🇭🇳", currency: "HNL", phone: "+504" },
-    NI: { flag: "🇳🇮", currency: "NIO", phone: "+505" },
-    SV: { flag: "🇸🇻", currency: "USD", phone: "+503" },
-    BZ: { flag: "🇧🇿", currency: "BZD", phone: "+501" },
-    DO: { flag: "🇩🇴", currency: "DOP", phone: "+1" },
-    CU: { flag: "🇨🇺", currency: "CUP", phone: "+53" },
-    JM: { flag: "🇯🇲", currency: "JMD", phone: "+1" },
-    PR: { flag: "🇵🇷", currency: "USD", phone: "+1" },
-
-    GB: { flag: "🇬🇧", currency: "GBP", phone: "+44" },
-    IE: { flag: "🇮🇪", currency: "EUR", phone: "+353" },
-    PT: { flag: "🇵🇹", currency: "EUR", phone: "+351" },
-    ES: { flag: "🇪🇸", currency: "EUR", phone: "+34" },
-    FR: { flag: "🇫🇷", currency: "EUR", phone: "+33" },
-    BE: { flag: "🇧🇪", currency: "EUR", phone: "+32" },
-    NL: { flag: "🇳🇱", currency: "EUR", phone: "+31" },
-    LU: { flag: "🇱🇺", currency: "EUR", phone: "+352" },
-    DE: { flag: "🇩🇪", currency: "EUR", phone: "+49" },
-    CH: { flag: "🇨🇭", currency: "CHF", phone: "+41" },
-    AT: { flag: "🇦🇹", currency: "EUR", phone: "+43" },
-    IT: { flag: "🇮🇹", currency: "EUR", phone: "+39" },
-    GR: { flag: "🇬🇷", currency: "EUR", phone: "+30" },
-    SE: { flag: "🇸🇪", currency: "SEK", phone: "+46" },
-    NO: { flag: "🇳🇴", currency: "NOK", phone: "+47" },
-    FI: { flag: "🇫🇮", currency: "EUR", phone: "+358" },
-    DK: { flag: "🇩🇰", currency: "DKK", phone: "+45" },
-    PL: { flag: "🇵🇱", currency: "PLN", phone: "+48" },
-    CZ: { flag: "🇨🇿", currency: "CZK", phone: "+420" },
-    HU: { flag: "🇭🇺", currency: "HUF", phone: "+36" },
-    RO: { flag: "🇷🇴", currency: "RON", phone: "+40" },
-    BG: { flag: "🇧🇬", currency: "BGN", phone: "+359" },
-
-    RU: { flag: "🇷🇺", currency: "RUB", phone: "+7" },
-    UA: { flag: "🇺🇦", currency: "UAH", phone: "+380" },
-    BY: { flag: "🇧🇾", currency: "BYN", phone: "+375" },
-    TR: { flag: "🇹🇷", currency: "TRY", phone: "+90" },
-
-    EG: { flag: "🇪🇬", currency: "EGP", phone: "+20" },
-    ZA: { flag: "🇿🇦", currency: "ZAR", phone: "+27" },
-    NG: { flag: "🇳🇬", currency: "NGN", phone: "+234" },
-    KE: { flag: "🇰🇪", currency: "KES", phone: "+254" },
-    MA: { flag: "🇲🇦", currency: "MAD", phone: "+212" },
-    DZ: { flag: "🇩🇿", currency: "DZD", phone: "+213" },
-    GH: { flag: "🇬🇭", currency: "GHS", phone: "+233" },
-    CI: { flag: "🇨🇮", currency: "XOF", phone: "+225" },
-
+    AD: { flag: "🇦🇩", currency: "EUR", phone: "+376" },
     AE: { flag: "🇦🇪", currency: "AED", phone: "+971" },
-    SA: { flag: "🇸🇦", currency: "SAR", phone: "+966" },
-    QA: { flag: "🇶🇦", currency: "QAR", phone: "+974" },
-    KW: { flag: "🇰🇼", currency: "KWD", phone: "+965" },
-    OM: { flag: "🇴🇲", currency: "OMR", phone: "+968" },
-    IL: { flag: "🇮🇱", currency: "ILS", phone: "+972" },
-    JO: { flag: "🇯🇴", currency: "JOD", phone: "+962" },
-    LB: { flag: "🇱🇧", currency: "LBP", phone: "+961" },
-    IR: { flag: "🇮🇷", currency: "IRR", phone: "+98" },
-
-    IN: { flag: "🇮🇳", currency: "INR", phone: "+91" },
-    PK: { flag: "🇵🇰", currency: "PKR", phone: "+92" },
-    BD: { flag: "🇧🇩", currency: "BDT", phone: "+880" },
-    LK: { flag: "🇱🇰", currency: "LKR", phone: "+94" },
-    NP: { flag: "🇳🇵", currency: "NPR", phone: "+977" },
-
-    CN: { flag: "🇨🇳", currency: "CNY", phone: "+86" },
-    JP: { flag: "🇯🇵", currency: "JPY", phone: "+81" },
-    KR: { flag: "🇰🇷", currency: "KRW", phone: "+82" },
-    TW: { flag: "🇹🇼", currency: "TWD", phone: "+886" },
-    HK: { flag: "🇭🇰", currency: "HKD", phone: "+852" },
-    SG: { flag: "🇸🇬", currency: "SGD", phone: "+65" },
-    MY: { flag: "🇲🇾", currency: "MYR", phone: "+60" },
-    TH: { flag: "🇹🇭", currency: "THB", phone: "+66" },
-    VN: { flag: "🇻🇳", currency: "VND", phone: "+84" },
-    ID: { flag: "🇮🇩", currency: "IDR", phone: "+62" },
-    PH: { flag: "🇵🇭", currency: "PHP", phone: "+63" },
-
+    AF: { flag: "🇦🇫", currency: "AFN", phone: "+93" },
+    AG: { flag: "🇦🇬", currency: "XCD", phone: "+1" },
+    AI: { flag: "🇦🇮", currency: "XCD", phone: "+1" },
+    AL: { flag: "🇦🇱", currency: "ALL", phone: "+355" },
+    AM: { flag: "🇦🇲", currency: "AMD", phone: "+374" },
+    AO: { flag: "🇦🇴", currency: "AOA", phone: "+244" },
+    AQ: { flag: "🇦🇶", currency: "—", phone: "—" },
+    AR: { flag: "🇦🇷", currency: "ARS", phone: "+54" },
+    AS: { flag: "🇦🇸", currency: "USD", phone: "+1" },
+    AT: { flag: "🇦🇹", currency: "EUR", phone: "+43" },
     AU: { flag: "🇦🇺", currency: "AUD", phone: "+61" },
-    NZ: { flag: "🇳🇿", currency: "NZD", phone: "+64" },
+    AW: { flag: "🇦🇼", currency: "AWG", phone: "+297" },
+    AX: { flag: "🇦🇽", currency: "EUR", phone: "+358" },
+    AZ: { flag: "🇦🇿", currency: "AZN", phone: "+994" },
+    BA: { flag: "🇧🇦", currency: "BAM", phone: "+387" },
+    BB: { flag: "🇧🇧", currency: "BBD", phone: "+1" },
+    BD: { flag: "🇧🇩", currency: "BDT", phone: "+880" },
+    BE: { flag: "🇧🇪", currency: "EUR", phone: "+32" },
+    BF: { flag: "🇧🇫", currency: "XOF", phone: "+226" },
+    BG: { flag: "🇧🇬", currency: "BGN", phone: "+359" },
+    BH: { flag: "🇧🇭", currency: "BHD", phone: "+973" },
+    BI: { flag: "🇧🇮", currency: "BIF", phone: "+257" },
+    BJ: { flag: "🇧🇯", currency: "XOF", phone: "+229" },
+    BL: { flag: "🇧🇱", currency: "EUR", phone: "+590" },
+    BM: { flag: "🇧🇲", currency: "BMD", phone: "+1" },
+    BN: { flag: "🇧🇳", currency: "BND", phone: "+673" },
+    BO: { flag: "🇧🇴", currency: "BOB", phone: "+591" },
+    BQ: { flag: "🇧🇶", currency: "USD", phone: "+599" },
+    BR: { flag: "🇧🇷", currency: "BRL", phone: "+55" },
+    BS: { flag: "🇧🇸", currency: "BSD", phone: "+1" },
+    BT: { flag: "🇧🇹", currency: "INR", phone: "+975" },
+    BV: { flag: "🇧🇻", currency: "NOK", phone: "—" },
+    BW: { flag: "🇧🇼", currency: "BWP", phone: "+267" },
+    BY: { flag: "🇧🇾", currency: "BYN", phone: "+375" },
+    BZ: { flag: "🇧🇿", currency: "BZD", phone: "+501" },
+    CA: { flag: "🇨🇦", currency: "CAD", phone: "+1" },
+    CC: { flag: "🇨🇨", currency: "AUD", phone: "+61" },
+    CD: { flag: "🇨🇩", currency: "CDF", phone: "+243" },
+    CF: { flag: "🇨🇫", currency: "XAF", phone: "+236" },
+    CG: { flag: "🇨🇬", currency: "XAF", phone: "+242" },
+    CH: { flag: "🇨🇭", currency: "CHF", phone: "+41" },
+    CI: { flag: "🇨🇮", currency: "XOF", phone: "+225" },
+    CK: { flag: "🇨🇰", currency: "NZD", phone: "+682" },
+    CL: { flag: "🇨🇱", currency: "CLP", phone: "+56" },
+    CM: { flag: "🇨🇲", currency: "XAF", phone: "+237" },
+    CN: { flag: "🇨🇳", currency: "CNY", phone: "+86" },
+    CO: { flag: "🇨🇴", currency: "COP", phone: "+57" },
+    CR: { flag: "🇨🇷", currency: "CRC", phone: "+506" },
+    CU: { flag: "🇨🇺", currency: "CUP", phone: "+53" },
+    CV: { flag: "🇨🇻", currency: "CVE", phone: "+238" },
+    CW: { flag: "🇨🇼", currency: "XCG", phone: "+599" },
+    CX: { flag: "🇨🇽", currency: "AUD", phone: "+61" },
+    CY: { flag: "🇨🇾", currency: "EUR", phone: "+357" },
+    CZ: { flag: "🇨🇿", currency: "CZK", phone: "+420" },
+    DE: { flag: "🇩🇪", currency: "EUR", phone: "+49" },
+    DJ: { flag: "🇩🇯", currency: "DJF", phone: "+253" },
+    DK: { flag: "🇩🇰", currency: "DKK", phone: "+45" },
+    DM: { flag: "🇩🇲", currency: "XCD", phone: "+1" },
+    DO: { flag: "🇩🇴", currency: "DOP", phone: "+1" },
+    DZ: { flag: "🇩🇿", currency: "DZD", phone: "+213" },
+    EC: { flag: "🇪🇨", currency: "USD", phone: "+593" },
+    EE: { flag: "🇪🇪", currency: "EUR", phone: "+372" },
+    EG: { flag: "🇪🇬", currency: "EGP", phone: "+20" },
+    EH: { flag: "🇪🇭", currency: "MAD", phone: "+212" },
+    ER: { flag: "🇪🇷", currency: "ERN", phone: "+291" },
+    ES: { flag: "🇪🇸", currency: "EUR", phone: "+34" },
+    ET: { flag: "🇪🇹", currency: "ETB", phone: "+251" },
+    FI: { flag: "🇫🇮", currency: "EUR", phone: "+358" },
     FJ: { flag: "🇫🇯", currency: "FJD", phone: "+679" },
+    FK: { flag: "🇫🇰", currency: "FKP", phone: "+500" },
+    FM: { flag: "🇫🇲", currency: "USD", phone: "+691" },
+    FO: { flag: "🇫🇴", currency: "DKK", phone: "+298" },
+    FR: { flag: "🇫🇷", currency: "EUR", phone: "+33" },
+    GA: { flag: "🇬🇦", currency: "XAF", phone: "+241" },
+    GB: { flag: "🇬🇧", currency: "GBP", phone: "+44" },
+    GD: { flag: "🇬🇩", currency: "XCD", phone: "+1" },
+    GE: { flag: "🇬🇪", currency: "GEL", phone: "+995" },
+    GF: { flag: "🇬🇫", currency: "EUR", phone: "+594" },
+    GG: { flag: "🇬🇬", currency: "GBP", phone: "+44" },
+    GH: { flag: "🇬🇭", currency: "GHS", phone: "+233" },
+    GI: { flag: "🇬🇮", currency: "GIP", phone: "+350" },
+    GL: { flag: "🇬🇱", currency: "DKK", phone: "+299" },
+    GM: { flag: "🇬🇲", currency: "GMD", phone: "+220" },
+    GN: { flag: "🇬🇳", currency: "GNF", phone: "+224" },
+    GP: { flag: "🇬🇵", currency: "EUR", phone: "+590" },
+    GQ: { flag: "🇬🇶", currency: "XAF", phone: "+240" },
+    GR: { flag: "🇬🇷", currency: "EUR", phone: "+30" },
+    GS: { flag: "🇬🇸", currency: "GBP", phone: "—" },
+    GT: { flag: "🇬🇹", currency: "GTQ", phone: "+502" },
+    GU: { flag: "🇬🇺", currency: "USD", phone: "+1" },
+    GW: { flag: "🇬🇼", currency: "XOF", phone: "+245" },
+    GY: { flag: "🇬🇾", currency: "GYD", phone: "+592" },
+    HK: { flag: "🇭🇰", currency: "HKD", phone: "+852" },
+    HM: { flag: "🇭🇲", currency: "AUD", phone: "—" },
+    HN: { flag: "🇭🇳", currency: "HNL", phone: "+504" },
+    HR: { flag: "🇭🇷", currency: "EUR", phone: "+385" },
+    HT: { flag: "🇭🇹", currency: "HTG", phone: "+509" },
+    HU: { flag: "🇭🇺", currency: "HUF", phone: "+36" },
+    ID: { flag: "🇮🇩", currency: "IDR", phone: "+62" },
+    IE: { flag: "🇮🇪", currency: "EUR", phone: "+353" },
+    IL: { flag: "🇮🇱", currency: "ILS", phone: "+972" },
+    IM: { flag: "🇮🇲", currency: "GBP", phone: "+44" },
+    IN: { flag: "🇮🇳", currency: "INR", phone: "+91" },
+    IO: { flag: "🇮🇴", currency: "USD", phone: "+246" },
+    IQ: { flag: "🇮🇶", currency: "IQD", phone: "+964" },
+    IR: { flag: "🇮🇷", currency: "IRR", phone: "+98" },
+    IS: { flag: "🇮🇸", currency: "ISK", phone: "+354" },
+    IT: { flag: "🇮🇹", currency: "EUR", phone: "+39" },
+    JE: { flag: "🇯🇪", currency: "GBP", phone: "+44" },
+    JM: { flag: "🇯🇲", currency: "JMD", phone: "+1" },
+    JO: { flag: "🇯🇴", currency: "JOD", phone: "+962" },
+    JP: { flag: "🇯🇵", currency: "JPY", phone: "+81" },
+    KE: { flag: "🇰🇪", currency: "KES", phone: "+254" },
+    KG: { flag: "🇰🇬", currency: "KGS", phone: "+996" },
+    KH: { flag: "🇰🇭", currency: "KHR", phone: "+855" },
+    KI: { flag: "🇰🇮", currency: "AUD", phone: "+686" },
+    KM: { flag: "🇰🇲", currency: "KMF", phone: "+269" },
+    KN: { flag: "🇰🇳", currency: "XCD", phone: "+1" },
+    KP: { flag: "🇰🇵", currency: "KPW", phone: "+850" },
+    KR: { flag: "🇰🇷", currency: "KRW", phone: "+82" },
+    KW: { flag: "🇰🇼", currency: "KWD", phone: "+965" },
+    KY: { flag: "🇰🇾", currency: "KYD", phone: "+1" },
+    KZ: { flag: "🇰🇿", currency: "KZT", phone: "+7" },
+    LA: { flag: "🇱🇦", currency: "LAK", phone: "+856" },
+    LB: { flag: "🇱🇧", currency: "LBP", phone: "+961" },
+    LC: { flag: "🇱🇨", currency: "XCD", phone: "+1" },
+    LI: { flag: "🇱🇮", currency: "CHF", phone: "+423" },
+    LK: { flag: "🇱🇰", currency: "LKR", phone: "+94" },
+    LR: { flag: "🇱🇷", currency: "LRD", phone: "+231" },
+    LS: { flag: "🇱🇸", currency: "ZAR", phone: "+266" },
+    LT: { flag: "🇱🇹", currency: "EUR", phone: "+370" },
+    LU: { flag: "🇱🇺", currency: "EUR", phone: "+352" },
+    LV: { flag: "🇱🇻", currency: "EUR", phone: "+371" },
+    LY: { flag: "🇱🇾", currency: "LYD", phone: "+218" },
+    MA: { flag: "🇲🇦", currency: "MAD", phone: "+212" },
+    MC: { flag: "🇲🇨", currency: "EUR", phone: "+377" },
+    MD: { flag: "🇲🇩", currency: "MDL", phone: "+373" },
+    ME: { flag: "🇲🇪", currency: "EUR", phone: "+382" },
+    MF: { flag: "🇲🇫", currency: "EUR", phone: "+590" },
+    MG: { flag: "🇲🇬", currency: "MGA", phone: "+261" },
+    MH: { flag: "🇲🇭", currency: "USD", phone: "+692" },
+    MK: { flag: "🇲🇰", currency: "MKD", phone: "+389" },
+    ML: { flag: "🇲🇱", currency: "XOF", phone: "+223" },
+    MM: { flag: "🇲🇲", currency: "MMK", phone: "+95" },
+    MN: { flag: "🇲🇳", currency: "MNT", phone: "+976" },
+    MO: { flag: "🇲🇴", currency: "MOP", phone: "+853" },
+    MP: { flag: "🇲🇵", currency: "USD", phone: "+1" },
+    MQ: { flag: "🇲🇶", currency: "EUR", phone: "+596" },
+    MR: { flag: "🇲🇷", currency: "MRU", phone: "+222" },
+    MS: { flag: "🇲🇸", currency: "XCD", phone: "+1" },
+    MT: { flag: "🇲🇹", currency: "EUR", phone: "+356" },
+    MU: { flag: "🇲🇺", currency: "MUR", phone: "+230" },
+    MV: { flag: "🇲🇻", currency: "MVR", phone: "+960" },
+    MW: { flag: "🇲🇼", currency: "MWK", phone: "+265" },
+    MX: { flag: "🇲🇽", currency: "MXN", phone: "+52" },
+    MY: { flag: "🇲🇾", currency: "MYR", phone: "+60" },
+    MZ: { flag: "🇲🇿", currency: "MZN", phone: "+258" },
+    NA: { flag: "🇳🇦", currency: "ZAR", phone: "+264" },
+    NC: { flag: "🇳🇨", currency: "XPF", phone: "+687" },
+    NE: { flag: "🇳🇪", currency: "XOF", phone: "+227" },
+    NF: { flag: "🇳🇫", currency: "AUD", phone: "+672" },
+    NG: { flag: "🇳🇬", currency: "NGN", phone: "+234" },
+    NI: { flag: "🇳🇮", currency: "NIO", phone: "+505" },
+    NL: { flag: "🇳🇱", currency: "EUR", phone: "+31" },
+    NO: { flag: "🇳🇴", currency: "NOK", phone: "+47" },
+    NP: { flag: "🇳🇵", currency: "NPR", phone: "+977" },
+    NR: { flag: "🇳🇷", currency: "AUD", phone: "+674" },
+    NU: { flag: "🇳🇺", currency: "NZD", phone: "+683" },
+    NZ: { flag: "🇳🇿", currency: "NZD", phone: "+64" },
+    OM: { flag: "🇴🇲", currency: "OMR", phone: "+968" },
+    PA: { flag: "🇵🇦", currency: "PAB", phone: "+507" },
+    PE: { flag: "🇵🇪", currency: "PEN", phone: "+51" },
+    PF: { flag: "🇵🇫", currency: "XPF", phone: "+689" },
     PG: { flag: "🇵🇬", currency: "PGK", phone: "+675" },
-
-    AQ: { flag: "🇦🇶", currency: "—",   phone: "—" },
-    // ...you can extend this table as needed
+    PH: { flag: "🇵🇭", currency: "PHP", phone: "+63" },
+    PK: { flag: "🇵🇰", currency: "PKR", phone: "+92" },
+    PL: { flag: "🇵🇱", currency: "PLN", phone: "+48" },
+    PM: { flag: "🇵🇲", currency: "EUR", phone: "+508" },
+    PN: { flag: "🇵🇳", currency: "NZD", phone: "—" },
+    PR: { flag: "🇵🇷", currency: "USD", phone: "+1" },
+    PS: { flag: "🇵🇸", currency: "ILS", phone: "+970" },
+    PT: { flag: "🇵🇹", currency: "EUR", phone: "+351" },
+    PW: { flag: "🇵🇼", currency: "USD", phone: "+680" },
+    PY: { flag: "🇵🇾", currency: "PYG", phone: "+595" },
+    QA: { flag: "🇶🇦", currency: "QAR", phone: "+974" },
+    RE: { flag: "🇷🇪", currency: "EUR", phone: "+262" },
+    RO: { flag: "🇷🇴", currency: "RON", phone: "+40" },
+    RS: { flag: "🇷🇸", currency: "RSD", phone: "+381" },
+    RU: { flag: "🇷🇺", currency: "RUB", phone: "+7" },
+    RW: { flag: "🇷🇼", currency: "RWF", phone: "+250" },
+    SA: { flag: "🇸🇦", currency: "SAR", phone: "+966" },
+    SB: { flag: "🇸🇧", currency: "SBD", phone: "+677" },
+    SC: { flag: "🇸🇨", currency: "SCR", phone: "+248" },
+    SD: { flag: "🇸🇩", currency: "SDG", phone: "+249" },
+    SE: { flag: "🇸🇪", currency: "SEK", phone: "+46" },
+    SG: { flag: "🇸🇬", currency: "SGD", phone: "+65" },
+    SH: { flag: "🇸🇭", currency: "SHP", phone: "+290" },
+    SI: { flag: "🇸🇮", currency: "EUR", phone: "+386" },
+    SJ: { flag: "🇸🇯", currency: "NOK", phone: "+47" },
+    SK: { flag: "🇸🇰", currency: "EUR", phone: "+421" },
+    SL: { flag: "🇸🇱", currency: "SLE", phone: "+232" },
+    SM: { flag: "🇸🇲", currency: "EUR", phone: "+378" },
+    SN: { flag: "🇸🇳", currency: "XOF", phone: "+221" },
+    SO: { flag: "🇸🇴", currency: "SOS", phone: "+252" },
+    SR: { flag: "🇸🇷", currency: "SRD", phone: "+597" },
+    SS: { flag: "🇸🇸", currency: "SSP", phone: "+211" },
+    ST: { flag: "🇸🇹", currency: "STN", phone: "+239" },
+    SV: { flag: "🇸🇻", currency: "USD", phone: "+503" },
+    SX: { flag: "🇸🇽", currency: "XCG", phone: "+1" },
+    SY: { flag: "🇸🇾", currency: "SYP", phone: "+963" },
+    SZ: { flag: "🇸🇿", currency: "SZL", phone: "+268" },
+    TC: { flag: "🇹🇨", currency: "USD", phone: "+1" },
+    TD: { flag: "🇹🇩", currency: "XAF", phone: "+235" },
+    TF: { flag: "🇹🇫", currency: "EUR", phone: "—" },
+    TG: { flag: "🇹🇬", currency: "XOF", phone: "+228" },
+    TH: { flag: "🇹🇭", currency: "THB", phone: "+66" },
+    TJ: { flag: "🇹🇯", currency: "TJS", phone: "+992" },
+    TK: { flag: "🇹🇰", currency: "NZD", phone: "+690" },
+    TL: { flag: "🇹🇱", currency: "USD", phone: "+670" },
+    TM: { flag: "🇹🇲", currency: "TMT", phone: "+993" },
+    TN: { flag: "🇹🇳", currency: "TND", phone: "+216" },
+    TO: { flag: "🇹🇴", currency: "TOP", phone: "+676" },
+    TR: { flag: "🇹🇷", currency: "TRY", phone: "+90" },
+    TT: { flag: "🇹🇹", currency: "TTD", phone: "+1" },
+    TV: { flag: "🇹🇻", currency: "AUD", phone: "+688" },
+    TW: { flag: "🇹🇼", currency: "TWD", phone: "+886" },
+    TZ: { flag: "🇹🇿", currency: "TZS", phone: "+255" },
+    UA: { flag: "🇺🇦", currency: "UAH", phone: "+380" },
+    UG: { flag: "🇺🇬", currency: "UGX", phone: "+256" },
+    UM: { flag: "🇺🇲", currency: "USD", phone: "—" },
+    US: { flag: "🇺🇸", currency: "USD", phone: "+1" },
+    UY: { flag: "🇺🇾", currency: "UYU", phone: "+598" },
+    UZ: { flag: "🇺🇿", currency: "UZS", phone: "+998" },
+    VA: { flag: "🇻🇦", currency: "EUR", phone: "+39" },
+    VC: { flag: "🇻🇨", currency: "XCD", phone: "+1" },
+    VE: { flag: "🇻🇪", currency: "VES", phone: "+58" },
+    VG: { flag: "🇻🇬", currency: "USD", phone: "+1" },
+    VI: { flag: "🇻🇮", currency: "USD", phone: "+1" },
+    VN: { flag: "🇻🇳", currency: "VND", phone: "+84" },
+    VU: { flag: "🇻🇺", currency: "VUV", phone: "+678" },
+    WF: { flag: "🇼🇫", currency: "XPF", phone: "+681" },
+    WS: { flag: "🇼🇸", currency: "WST", phone: "+685" },
+    YE: { flag: "🇾🇪", currency: "YER", phone: "+967" },
+    YT: { flag: "🇾🇹", currency: "EUR", phone: "+262" },
+    ZA: { flag: "🇿🇦", currency: "ZAR", phone: "+27" },
+    ZM: { flag: "🇿🇲", currency: "ZMW", phone: "+260" },
+    ZW: { flag: "🇿🇼", currency: "USD", phone: "+263" },
   };
 
+  // ========= IANA time zone -> country code =========
+  // Generated from the IANA tz database (zone.tab + Link aliases); covers every
+  // zone returned by Intl.supportedValuesOf("timeZone"). Anything unmapped
+  // (e.g. Etc/*, UTC) falls back to META_FALLBACK.
   const TZ_TO_COUNTRY = {
-    // Americas (sample + key zones)
-    "America/Mexico_City": "MX",
-    "America/Bahia_Banderas": "MX",
-    "America/Tijuana": "MX",
-    "America/Cancun": "MX",
-    "America/Monterrey": "MX",
-    "America/Guadalajara": "MX",
-
-    "America/New_York": "US",
-    "America/Chicago": "US",
-    "America/Denver": "US",
-    "America/Los_Angeles": "US",
-    "America/Phoenix": "US",
-    "America/Anchorage": "US",
-    "Pacific/Honolulu": "US",
-
-    "America/Toronto": "CA",
-    "America/Vancouver": "CA",
-    "America/Winnipeg": "CA",
-    "America/Halifax": "CA",
-    "America/St_Johns": "CA",
-
-    "America/Sao_Paulo": "BR",
-    "America/Rio_Branco": "BR",
-    "America/Manaus": "BR",
-    "America/Bahia": "BR",
-    "America/Araguaina": "BR",
-    "America/Boa_Vista": "BR",
-
-    "America/Buenos_Aires": "AR",
-    "America/Argentina/Buenos_Aires": "AR",
-    "America/Argentina/Cordoba": "AR",
-    "America/Argentina/Mendoza": "AR",
-    "America/Argentina/Ushuaia": "AR",
-
-    "America/Santiago": "CL",
-    "America/Lima": "PE",
-    "America/Bogota": "CO",
-    "America/Caracas": "VE",
-    "America/La_Paz": "BO",
-    "America/Montevideo": "UY",
-    "America/Asuncion": "PY",
-    "America/Guayaquil": "EC",
-
-    // Europe (key zones)
-    "Europe/London": "GB",
-    "Europe/Dublin": "IE",
-    "Europe/Lisbon": "PT",
-    "Atlantic/Azores": "PT",
-    "Europe/Madrid": "ES",
-    "Europe/Paris": "FR",
-    "Europe/Brussels": "BE",
-    "Europe/Amsterdam": "NL",
-    "Europe/Berlin": "DE",
-    "Europe/Rome": "IT",
-    "Europe/Athens": "GR",
-    "Europe/Stockholm": "SE",
-    "Europe/Oslo": "NO",
-    "Europe/Helsinki": "FI",
-    "Europe/Copenhagen": "DK",
-    "Europe/Prague": "CZ",
-    "Europe/Warsaw": "PL",
-    "Europe/Budapest": "HU",
-    "Europe/Bucharest": "RO",
-    "Europe/Sofia": "BG",
-    "Europe/Moscow": "RU",
-    "Europe/Kyiv": "UA",
-
-    // Africa / Middle East (key zones)
-    "Africa/Cairo": "EG",
-    "Africa/Johannesburg": "ZA",
-    "Africa/Lagos": "NG",
-    "Africa/Nairobi": "KE",
-    "Africa/Casablanca": "MA",
-    "Africa/Algiers": "DZ",
-    "Africa/Accra": "GH",
     "Africa/Abidjan": "CI",
-
-    "Asia/Dubai": "AE",
-    "Asia/Riyadh": "SA",
-    "Asia/Doha": "QA",
-    "Asia/Kuwait": "KW",
-    "Asia/Tehran": "IR",
-    "Asia/Jerusalem": "IL",
-    "Asia/Amman": "JO",
-    "Asia/Beirut": "LB",
-
-    // Asia (key zones)
-    "Asia/Kolkata": "IN",
-    "Asia/Karachi": "PK",
-    "Asia/Dhaka": "BD",
-    "Asia/Colombo": "LK",
-    "Asia/Kathmandu": "NP",
-
-    "Asia/Shanghai": "CN",
-    "Asia/Tokyo": "JP",
-    "Asia/Seoul": "KR",
-    "Asia/Taipei": "TW",
-    "Asia/Hong_Kong": "HK",
-    "Asia/Singapore": "SG",
-    "Asia/Bangkok": "TH",
-    "Asia/Ho_Chi_Minh": "VN",
-    "Asia/Jakarta": "ID",
-    "Asia/Manila": "PH",
-    "Asia/Kuala_Lumpur": "MY",
-
-    // Oceania
-    "Australia/Sydney": "AU",
-    "Australia/Melbourne": "AU",
-    "Australia/Brisbane": "AU",
-    "Australia/Perth": "AU",
-    "Australia/Adelaide": "AU",
-    "Australia/Darwin": "AU",
-    "Australia/Hobart": "AU",
-
-    "Pacific/Auckland": "NZ",
-    "Pacific/Chatham": "NZ",
-    "Pacific/Fiji": "FJ",
-    "Pacific/Port_Moresby": "PG",
-
-    // Antarctica (generic AQ)
+    "Africa/Accra": "GH",
+    "Africa/Addis_Ababa": "ET",
+    "Africa/Algiers": "DZ",
+    "Africa/Asmara": "ER",
+    "Africa/Asmera": "ER",
+    "Africa/Bamako": "ML",
+    "Africa/Bangui": "CF",
+    "Africa/Banjul": "GM",
+    "Africa/Bissau": "GW",
+    "Africa/Blantyre": "MW",
+    "Africa/Brazzaville": "CG",
+    "Africa/Bujumbura": "BI",
+    "Africa/Cairo": "EG",
+    "Africa/Casablanca": "MA",
+    "Africa/Ceuta": "ES",
+    "Africa/Conakry": "GN",
+    "Africa/Dakar": "SN",
+    "Africa/Dar_es_Salaam": "TZ",
+    "Africa/Djibouti": "DJ",
+    "Africa/Douala": "CM",
+    "Africa/El_Aaiun": "EH",
+    "Africa/Freetown": "SL",
+    "Africa/Gaborone": "BW",
+    "Africa/Harare": "ZW",
+    "Africa/Johannesburg": "ZA",
+    "Africa/Juba": "SS",
+    "Africa/Kampala": "UG",
+    "Africa/Khartoum": "SD",
+    "Africa/Kigali": "RW",
+    "Africa/Kinshasa": "CD",
+    "Africa/Lagos": "NG",
+    "Africa/Libreville": "GA",
+    "Africa/Lome": "TG",
+    "Africa/Luanda": "AO",
+    "Africa/Lubumbashi": "CD",
+    "Africa/Lusaka": "ZM",
+    "Africa/Malabo": "GQ",
+    "Africa/Maputo": "MZ",
+    "Africa/Maseru": "LS",
+    "Africa/Mbabane": "SZ",
+    "Africa/Mogadishu": "SO",
+    "Africa/Monrovia": "LR",
+    "Africa/Nairobi": "KE",
+    "Africa/Ndjamena": "TD",
+    "Africa/Niamey": "NE",
+    "Africa/Nouakchott": "MR",
+    "Africa/Ouagadougou": "BF",
+    "Africa/Porto-Novo": "BJ",
+    "Africa/Sao_Tome": "ST",
+    "Africa/Timbuktu": "ML",
+    "Africa/Tripoli": "LY",
+    "Africa/Tunis": "TN",
+    "Africa/Windhoek": "NA",
+    "America/Adak": "US",
+    "America/Anchorage": "US",
+    "America/Anguilla": "AI",
+    "America/Antigua": "AG",
+    "America/Araguaina": "BR",
+    "America/Argentina/Buenos_Aires": "AR",
+    "America/Argentina/Catamarca": "AR",
+    "America/Argentina/ComodRivadavia": "AR",
+    "America/Argentina/Cordoba": "AR",
+    "America/Argentina/Jujuy": "AR",
+    "America/Argentina/La_Rioja": "AR",
+    "America/Argentina/Mendoza": "AR",
+    "America/Argentina/Rio_Gallegos": "AR",
+    "America/Argentina/Salta": "AR",
+    "America/Argentina/San_Juan": "AR",
+    "America/Argentina/San_Luis": "AR",
+    "America/Argentina/Tucuman": "AR",
+    "America/Argentina/Ushuaia": "AR",
+    "America/Aruba": "AW",
+    "America/Asuncion": "PY",
+    "America/Atikokan": "CA",
+    "America/Atka": "US",
+    "America/Bahia": "BR",
+    "America/Bahia_Banderas": "MX",
+    "America/Barbados": "BB",
+    "America/Belem": "BR",
+    "America/Belize": "BZ",
+    "America/Blanc-Sablon": "CA",
+    "America/Boa_Vista": "BR",
+    "America/Bogota": "CO",
+    "America/Boise": "US",
+    "America/Buenos_Aires": "AR",
+    "America/Cambridge_Bay": "CA",
+    "America/Campo_Grande": "BR",
+    "America/Cancun": "MX",
+    "America/Caracas": "VE",
+    "America/Catamarca": "AR",
+    "America/Cayenne": "GF",
+    "America/Cayman": "KY",
+    "America/Chicago": "US",
+    "America/Chihuahua": "MX",
+    "America/Ciudad_Juarez": "MX",
+    "America/Coral_Harbour": "CA",
+    "America/Cordoba": "AR",
+    "America/Costa_Rica": "CR",
+    "America/Coyhaique": "CL",
+    "America/Creston": "CA",
+    "America/Cuiaba": "BR",
+    "America/Curacao": "CW",
+    "America/Danmarkshavn": "GL",
+    "America/Dawson": "CA",
+    "America/Dawson_Creek": "CA",
+    "America/Denver": "US",
+    "America/Detroit": "US",
+    "America/Dominica": "DM",
+    "America/Edmonton": "CA",
+    "America/Eirunepe": "BR",
+    "America/El_Salvador": "SV",
+    "America/Ensenada": "MX",
+    "America/Fort_Nelson": "CA",
+    "America/Fort_Wayne": "US",
+    "America/Fortaleza": "BR",
+    "America/Glace_Bay": "CA",
+    "America/Godthab": "GL",
+    "America/Goose_Bay": "CA",
+    "America/Grand_Turk": "TC",
+    "America/Grenada": "GD",
+    "America/Guadeloupe": "GP",
+    "America/Guatemala": "GT",
+    "America/Guayaquil": "EC",
+    "America/Guyana": "GY",
+    "America/Halifax": "CA",
+    "America/Havana": "CU",
+    "America/Hermosillo": "MX",
+    "America/Indiana/Indianapolis": "US",
+    "America/Indiana/Knox": "US",
+    "America/Indiana/Marengo": "US",
+    "America/Indiana/Petersburg": "US",
+    "America/Indiana/Tell_City": "US",
+    "America/Indiana/Vevay": "US",
+    "America/Indiana/Vincennes": "US",
+    "America/Indiana/Winamac": "US",
+    "America/Indianapolis": "US",
+    "America/Inuvik": "CA",
+    "America/Iqaluit": "CA",
+    "America/Jamaica": "JM",
+    "America/Jujuy": "AR",
+    "America/Juneau": "US",
+    "America/Kentucky/Louisville": "US",
+    "America/Kentucky/Monticello": "US",
+    "America/Knox_IN": "US",
+    "America/Kralendijk": "BQ",
+    "America/La_Paz": "BO",
+    "America/Lima": "PE",
+    "America/Los_Angeles": "US",
+    "America/Louisville": "US",
+    "America/Lower_Princes": "SX",
+    "America/Maceio": "BR",
+    "America/Managua": "NI",
+    "America/Manaus": "BR",
+    "America/Marigot": "MF",
+    "America/Martinique": "MQ",
+    "America/Matamoros": "MX",
+    "America/Mazatlan": "MX",
+    "America/Mendoza": "AR",
+    "America/Menominee": "US",
+    "America/Merida": "MX",
+    "America/Metlakatla": "US",
+    "America/Mexico_City": "MX",
+    "America/Miquelon": "PM",
+    "America/Moncton": "CA",
+    "America/Monterrey": "MX",
+    "America/Montevideo": "UY",
+    "America/Montreal": "CA",
+    "America/Montserrat": "MS",
+    "America/Nassau": "BS",
+    "America/New_York": "US",
+    "America/Nipigon": "CA",
+    "America/Nome": "US",
+    "America/Noronha": "BR",
+    "America/North_Dakota/Beulah": "US",
+    "America/North_Dakota/Center": "US",
+    "America/North_Dakota/New_Salem": "US",
+    "America/Nuuk": "GL",
+    "America/Ojinaga": "MX",
+    "America/Panama": "PA",
+    "America/Pangnirtung": "CA",
+    "America/Paramaribo": "SR",
+    "America/Phoenix": "US",
+    "America/Port-au-Prince": "HT",
+    "America/Port_of_Spain": "TT",
+    "America/Porto_Acre": "BR",
+    "America/Porto_Velho": "BR",
+    "America/Puerto_Rico": "PR",
+    "America/Punta_Arenas": "CL",
+    "America/Rainy_River": "CA",
+    "America/Rankin_Inlet": "CA",
+    "America/Recife": "BR",
+    "America/Regina": "CA",
+    "America/Resolute": "CA",
+    "America/Rio_Branco": "BR",
+    "America/Rosario": "AR",
+    "America/Santa_Isabel": "MX",
+    "America/Santarem": "BR",
+    "America/Santiago": "CL",
+    "America/Santo_Domingo": "DO",
+    "America/Sao_Paulo": "BR",
+    "America/Scoresbysund": "GL",
+    "America/Shiprock": "US",
+    "America/Sitka": "US",
+    "America/St_Barthelemy": "BL",
+    "America/St_Johns": "CA",
+    "America/St_Kitts": "KN",
+    "America/St_Lucia": "LC",
+    "America/St_Thomas": "VI",
+    "America/St_Vincent": "VC",
+    "America/Swift_Current": "CA",
+    "America/Tegucigalpa": "HN",
+    "America/Thule": "GL",
+    "America/Thunder_Bay": "CA",
+    "America/Tijuana": "MX",
+    "America/Toronto": "CA",
+    "America/Tortola": "VG",
+    "America/Vancouver": "CA",
+    "America/Virgin": "VI",
+    "America/Whitehorse": "CA",
+    "America/Winnipeg": "CA",
+    "America/Yakutat": "US",
+    "America/Yellowknife": "CA",
+    "Antarctica/Casey": "AQ",
+    "Antarctica/Davis": "AQ",
+    "Antarctica/DumontDUrville": "AQ",
+    "Antarctica/Macquarie": "AU",
+    "Antarctica/Mawson": "AQ",
     "Antarctica/McMurdo": "AQ",
     "Antarctica/Palmer": "AQ",
-    "Antarctica/Rothera": "AQ"
-    // You can extend TZ_TO_COUNTRY with all zones you want;
-    // everything else will use META_FALLBACK.
+    "Antarctica/Rothera": "AQ",
+    "Antarctica/South_Pole": "AQ",
+    "Antarctica/Syowa": "AQ",
+    "Antarctica/Troll": "AQ",
+    "Antarctica/Vostok": "AQ",
+    "Arctic/Longyearbyen": "SJ",
+    "Asia/Aden": "YE",
+    "Asia/Almaty": "KZ",
+    "Asia/Amman": "JO",
+    "Asia/Anadyr": "RU",
+    "Asia/Aqtau": "KZ",
+    "Asia/Aqtobe": "KZ",
+    "Asia/Ashgabat": "TM",
+    "Asia/Ashkhabad": "TM",
+    "Asia/Atyrau": "KZ",
+    "Asia/Baghdad": "IQ",
+    "Asia/Bahrain": "BH",
+    "Asia/Baku": "AZ",
+    "Asia/Bangkok": "TH",
+    "Asia/Barnaul": "RU",
+    "Asia/Beirut": "LB",
+    "Asia/Bishkek": "KG",
+    "Asia/Brunei": "BN",
+    "Asia/Calcutta": "IN",
+    "Asia/Chita": "RU",
+    "Asia/Choibalsan": "MN",
+    "Asia/Chongqing": "CN",
+    "Asia/Chungking": "CN",
+    "Asia/Colombo": "LK",
+    "Asia/Dacca": "BD",
+    "Asia/Damascus": "SY",
+    "Asia/Dhaka": "BD",
+    "Asia/Dili": "TL",
+    "Asia/Dubai": "AE",
+    "Asia/Dushanbe": "TJ",
+    "Asia/Famagusta": "CY",
+    "Asia/Gaza": "PS",
+    "Asia/Harbin": "CN",
+    "Asia/Hebron": "PS",
+    "Asia/Ho_Chi_Minh": "VN",
+    "Asia/Hong_Kong": "HK",
+    "Asia/Hovd": "MN",
+    "Asia/Irkutsk": "RU",
+    "Asia/Istanbul": "TR",
+    "Asia/Jakarta": "ID",
+    "Asia/Jayapura": "ID",
+    "Asia/Jerusalem": "IL",
+    "Asia/Kabul": "AF",
+    "Asia/Kamchatka": "RU",
+    "Asia/Karachi": "PK",
+    "Asia/Kashgar": "CN",
+    "Asia/Kathmandu": "NP",
+    "Asia/Katmandu": "NP",
+    "Asia/Khandyga": "RU",
+    "Asia/Kolkata": "IN",
+    "Asia/Krasnoyarsk": "RU",
+    "Asia/Kuala_Lumpur": "MY",
+    "Asia/Kuching": "MY",
+    "Asia/Kuwait": "KW",
+    "Asia/Macao": "MO",
+    "Asia/Macau": "MO",
+    "Asia/Magadan": "RU",
+    "Asia/Makassar": "ID",
+    "Asia/Manila": "PH",
+    "Asia/Muscat": "OM",
+    "Asia/Nicosia": "CY",
+    "Asia/Novokuznetsk": "RU",
+    "Asia/Novosibirsk": "RU",
+    "Asia/Omsk": "RU",
+    "Asia/Oral": "KZ",
+    "Asia/Phnom_Penh": "KH",
+    "Asia/Pontianak": "ID",
+    "Asia/Pyongyang": "KP",
+    "Asia/Qatar": "QA",
+    "Asia/Qostanay": "KZ",
+    "Asia/Qyzylorda": "KZ",
+    "Asia/Rangoon": "MM",
+    "Asia/Riyadh": "SA",
+    "Asia/Saigon": "VN",
+    "Asia/Sakhalin": "RU",
+    "Asia/Samarkand": "UZ",
+    "Asia/Seoul": "KR",
+    "Asia/Shanghai": "CN",
+    "Asia/Singapore": "SG",
+    "Asia/Srednekolymsk": "RU",
+    "Asia/Taipei": "TW",
+    "Asia/Tashkent": "UZ",
+    "Asia/Tbilisi": "GE",
+    "Asia/Tehran": "IR",
+    "Asia/Tel_Aviv": "IL",
+    "Asia/Thimbu": "BT",
+    "Asia/Thimphu": "BT",
+    "Asia/Tokyo": "JP",
+    "Asia/Tomsk": "RU",
+    "Asia/Ujung_Pandang": "ID",
+    "Asia/Ulaanbaatar": "MN",
+    "Asia/Ulan_Bator": "MN",
+    "Asia/Urumqi": "CN",
+    "Asia/Ust-Nera": "RU",
+    "Asia/Vientiane": "LA",
+    "Asia/Vladivostok": "RU",
+    "Asia/Yakutsk": "RU",
+    "Asia/Yangon": "MM",
+    "Asia/Yekaterinburg": "RU",
+    "Asia/Yerevan": "AM",
+    "Atlantic/Azores": "PT",
+    "Atlantic/Bermuda": "BM",
+    "Atlantic/Canary": "ES",
+    "Atlantic/Cape_Verde": "CV",
+    "Atlantic/Faeroe": "FO",
+    "Atlantic/Faroe": "FO",
+    "Atlantic/Jan_Mayen": "NO",
+    "Atlantic/Madeira": "PT",
+    "Atlantic/Reykjavik": "IS",
+    "Atlantic/South_Georgia": "GS",
+    "Atlantic/St_Helena": "SH",
+    "Atlantic/Stanley": "FK",
+    "Australia/ACT": "AU",
+    "Australia/Adelaide": "AU",
+    "Australia/Brisbane": "AU",
+    "Australia/Broken_Hill": "AU",
+    "Australia/Canberra": "AU",
+    "Australia/Currie": "AU",
+    "Australia/Darwin": "AU",
+    "Australia/Eucla": "AU",
+    "Australia/Hobart": "AU",
+    "Australia/LHI": "AU",
+    "Australia/Lindeman": "AU",
+    "Australia/Lord_Howe": "AU",
+    "Australia/Melbourne": "AU",
+    "Australia/NSW": "AU",
+    "Australia/North": "AU",
+    "Australia/Perth": "AU",
+    "Australia/Queensland": "AU",
+    "Australia/South": "AU",
+    "Australia/Sydney": "AU",
+    "Australia/Tasmania": "AU",
+    "Australia/Victoria": "AU",
+    "Australia/West": "AU",
+    "Australia/Yancowinna": "AU",
+    "Brazil/Acre": "BR",
+    "Brazil/DeNoronha": "BR",
+    "Brazil/East": "BR",
+    "Brazil/West": "BR",
+    "Canada/Atlantic": "CA",
+    "Canada/Central": "CA",
+    "Canada/Eastern": "CA",
+    "Canada/Mountain": "CA",
+    "Canada/Newfoundland": "CA",
+    "Canada/Pacific": "CA",
+    "Canada/Saskatchewan": "CA",
+    "Canada/Yukon": "CA",
+    "Chile/Continental": "CL",
+    "Chile/EasterIsland": "CL",
+    "Cuba": "CU",
+    "Egypt": "EG",
+    "Eire": "IE",
+    "Europe/Amsterdam": "NL",
+    "Europe/Andorra": "AD",
+    "Europe/Astrakhan": "RU",
+    "Europe/Athens": "GR",
+    "Europe/Belfast": "GB",
+    "Europe/Belgrade": "RS",
+    "Europe/Berlin": "DE",
+    "Europe/Bratislava": "SK",
+    "Europe/Brussels": "BE",
+    "Europe/Bucharest": "RO",
+    "Europe/Budapest": "HU",
+    "Europe/Busingen": "DE",
+    "Europe/Chisinau": "MD",
+    "Europe/Copenhagen": "DK",
+    "Europe/Dublin": "IE",
+    "Europe/Gibraltar": "GI",
+    "Europe/Guernsey": "GG",
+    "Europe/Helsinki": "FI",
+    "Europe/Isle_of_Man": "IM",
+    "Europe/Istanbul": "TR",
+    "Europe/Jersey": "JE",
+    "Europe/Kaliningrad": "RU",
+    "Europe/Kiev": "UA",
+    "Europe/Kirov": "RU",
+    "Europe/Kyiv": "UA",
+    "Europe/Lisbon": "PT",
+    "Europe/Ljubljana": "SI",
+    "Europe/London": "GB",
+    "Europe/Luxembourg": "LU",
+    "Europe/Madrid": "ES",
+    "Europe/Malta": "MT",
+    "Europe/Mariehamn": "AX",
+    "Europe/Minsk": "BY",
+    "Europe/Monaco": "MC",
+    "Europe/Moscow": "RU",
+    "Europe/Nicosia": "CY",
+    "Europe/Oslo": "NO",
+    "Europe/Paris": "FR",
+    "Europe/Podgorica": "ME",
+    "Europe/Prague": "CZ",
+    "Europe/Riga": "LV",
+    "Europe/Rome": "IT",
+    "Europe/Samara": "RU",
+    "Europe/San_Marino": "SM",
+    "Europe/Sarajevo": "BA",
+    "Europe/Saratov": "RU",
+    "Europe/Simferopol": "UA",
+    "Europe/Skopje": "MK",
+    "Europe/Sofia": "BG",
+    "Europe/Stockholm": "SE",
+    "Europe/Tallinn": "EE",
+    "Europe/Tirane": "AL",
+    "Europe/Tiraspol": "MD",
+    "Europe/Ulyanovsk": "RU",
+    "Europe/Uzhgorod": "UA",
+    "Europe/Vaduz": "LI",
+    "Europe/Vatican": "VA",
+    "Europe/Vienna": "AT",
+    "Europe/Vilnius": "LT",
+    "Europe/Volgograd": "RU",
+    "Europe/Warsaw": "PL",
+    "Europe/Zagreb": "HR",
+    "Europe/Zaporozhye": "UA",
+    "Europe/Zurich": "CH",
+    "GB": "GB",
+    "GB-Eire": "GB",
+    "Hongkong": "HK",
+    "Iceland": "IS",
+    "Indian/Antananarivo": "MG",
+    "Indian/Chagos": "IO",
+    "Indian/Christmas": "CX",
+    "Indian/Cocos": "CC",
+    "Indian/Comoro": "KM",
+    "Indian/Kerguelen": "TF",
+    "Indian/Mahe": "SC",
+    "Indian/Maldives": "MV",
+    "Indian/Mauritius": "MU",
+    "Indian/Mayotte": "YT",
+    "Indian/Reunion": "RE",
+    "Iran": "IR",
+    "Israel": "IL",
+    "Jamaica": "JM",
+    "Japan": "JP",
+    "Kwajalein": "MH",
+    "Libya": "LY",
+    "Mexico/BajaNorte": "MX",
+    "Mexico/BajaSur": "MX",
+    "Mexico/General": "MX",
+    "NZ": "NZ",
+    "NZ-CHAT": "NZ",
+    "Navajo": "US",
+    "PRC": "CN",
+    "Pacific/Apia": "WS",
+    "Pacific/Auckland": "NZ",
+    "Pacific/Bougainville": "PG",
+    "Pacific/Chatham": "NZ",
+    "Pacific/Chuuk": "FM",
+    "Pacific/Easter": "CL",
+    "Pacific/Efate": "VU",
+    "Pacific/Enderbury": "KI",
+    "Pacific/Fakaofo": "TK",
+    "Pacific/Fiji": "FJ",
+    "Pacific/Funafuti": "TV",
+    "Pacific/Galapagos": "EC",
+    "Pacific/Gambier": "PF",
+    "Pacific/Guadalcanal": "SB",
+    "Pacific/Guam": "GU",
+    "Pacific/Honolulu": "US",
+    "Pacific/Johnston": "US",
+    "Pacific/Kanton": "KI",
+    "Pacific/Kiritimati": "KI",
+    "Pacific/Kosrae": "FM",
+    "Pacific/Kwajalein": "MH",
+    "Pacific/Majuro": "MH",
+    "Pacific/Marquesas": "PF",
+    "Pacific/Midway": "UM",
+    "Pacific/Nauru": "NR",
+    "Pacific/Niue": "NU",
+    "Pacific/Norfolk": "NF",
+    "Pacific/Noumea": "NC",
+    "Pacific/Pago_Pago": "AS",
+    "Pacific/Palau": "PW",
+    "Pacific/Pitcairn": "PN",
+    "Pacific/Pohnpei": "FM",
+    "Pacific/Ponape": "FM",
+    "Pacific/Port_Moresby": "PG",
+    "Pacific/Rarotonga": "CK",
+    "Pacific/Saipan": "MP",
+    "Pacific/Samoa": "AS",
+    "Pacific/Tahiti": "PF",
+    "Pacific/Tarawa": "KI",
+    "Pacific/Tongatapu": "TO",
+    "Pacific/Truk": "FM",
+    "Pacific/Wake": "UM",
+    "Pacific/Wallis": "WF",
+    "Pacific/Yap": "FM",
+    "Poland": "PL",
+    "Portugal": "PT",
+    "ROC": "TW",
+    "ROK": "KR",
+    "Singapore": "SG",
+    "Turkey": "TR",
+    "US/Alaska": "US",
+    "US/Aleutian": "US",
+    "US/Arizona": "US",
+    "US/Central": "US",
+    "US/East-Indiana": "US",
+    "US/Eastern": "US",
+    "US/Hawaii": "US",
+    "US/Indiana-Starke": "US",
+    "US/Michigan": "US",
+    "US/Mountain": "US",
+    "US/Pacific": "US",
+    "US/Samoa": "AS",
+    "W-SU": "RU"
   };
 
   const META_FALLBACK = { country: "", flag: "", currency: "—", phone: "—" };
@@ -862,12 +1346,10 @@
   const noRow = document.getElementById("no-results-row");
   const searchInput = document.getElementById("search");
   const formatToggle = document.getElementById("format-toggle");
-  const themeToggle = document.getElementById("theme-toggle");
 
   const pinnedWrapper = document.getElementById("pinned-wrapper");
   const pinnedGrid = document.getElementById("pinned-grid");
   const clearPinsBtn = document.getElementById("clear-pins");
-  const mainCard = document.querySelector(".main-card");
 
   const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
@@ -880,52 +1362,6 @@
 
   const PIN_KEY = "worldclock_pins";
   let pinnedSet = new Set();
-
-  const THEME_KEY = "worldclock_theme";
-
-  // ---------- theme ----------
-  function loadTheme() {
-    const stored = localStorage.getItem(THEME_KEY);
-    if (stored === "dark") {
-      body.classList.add("dark");
-      themeToggle.checked = true;
-    } else {
-      body.classList.remove("dark");
-      themeToggle.checked = false;
-    }
-  }
-
-  function saveTheme(mode) {
-    localStorage.setItem(THEME_KEY, mode);
-  }
-
-  themeToggle.addEventListener("change", () => {
-    if (themeToggle.checked) {
-      body.classList.add("dark");
-      saveTheme("dark");
-    } else {
-      body.classList.remove("dark");
-      saveTheme("moe");
-    }
-  });
-
-  // ---------- table show/hide UX ----------
-  function showTable() {
-    body.classList.add("show-table");
-  }
-
-  function hideTable() {
-    body.classList.remove("show-table");
-  }
-
-  searchInput.addEventListener("focus", showTable);
-  searchInput.addEventListener("click", showTable);
-
-  mainCard.addEventListener("click", (e) => {
-    if (!body.classList.contains("show-table")) return;
-    if (e.target.closest("#search")) return; // don't hide when interacting with search
-    hideTable();
-  });
 
   // ---------- pinned ----------
   function loadPinned() {
@@ -1210,7 +1646,6 @@
 
   const debouncedFilter = debounce(applyFilter, 200);
   searchInput.addEventListener("input", () => {
-    showTable();
     debouncedFilter();
   });
 
@@ -1241,7 +1676,6 @@
 
   // ---------- boot ----------
   (function init() {
-    loadTheme();
     loadPinned();
     initZones();
     applyFilter();
