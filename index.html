@@ -1,1673 +1,934 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="icon" type="image/webp" href="logo.webp">
   <meta charset="UTF-8">
-  <title>World Clock — Carino Systems</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Time — Carino Systems</title>
+  <meta name="description" content="Local time, UTC, Unix epoch and ISO — a searchable world-clock with pinned zones, plus live countdowns you can add and share.">
+  <link rel="icon" type="image/webp" href="logo.webp">
   <link rel="stylesheet" href="fonts/carino-fonts.css">
-
   <style>
-    :root {
-      --bg:          #050505;
-      --bg-elevated: #0a0a0a;
-      --bg-panel:    #0a0a0a;
-      --bg-header:   #050505;
-      --bg-row-alt:  #0d0d0d;
-      --text:        #ffffff;
-      --text-muted:  #a3a3a3;
-      --border:      #1f1f1f;
-      --accent:      #eab308;
-      --accent-soft: rgba(234,179,8,0.08);
-      --accent-dim:  rgba(234,179,8,0.3);
-      --danger:      #ef4444;
-      --shadow-soft: 0 18px 40px rgba(0,0,0,0.8);
+    :root{
+      --bg:#050505; --bg-elev:#0d0d0d; --bg-card:#0b0b0b;
+      --accent:#eab308; --accent-faint:rgba(234,179,8,.06); --accent-glow:rgba(234,179,8,.15); --accent-dim:rgba(234,179,8,.30);
+      --border:#262626; --text:#fff; --text-sec:#a3a3a3; --text-muted:#666;
+      --ok:#22c55e; --warn:#eab308; --err:#ef4444;
+      --sans:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+      --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+      --display:'Red Hat Display',var(--sans);
+      --radius:10px;
     }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;
+      display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased}
+    :root{scrollbar-width:thin;scrollbar-color:#3a3a3a transparent}
+    ::-webkit-scrollbar{width:8px;height:8px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#3a3a3a;border-radius:6px}
+    ::-webkit-scrollbar-thumb:hover{background:var(--accent-dim)}
+    button,input,select{font-family:inherit;color:inherit}
 
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; height: 100%; }
+    /* ---- tab bar ---- */
+    /* tab buttons — shown standalone, or relocated into the Carino navbar via [data-carino-actions] */
+    .tabs{display:flex;gap:6px;flex-shrink:0;padding:10px 24px;overflow-x:auto}
+    #carinoNav .tabs{padding:0}
+    .tab{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;
+      padding:7px 12px;cursor:pointer;color:var(--text-sec);background:transparent;border:1px solid var(--border);
+      border-radius:7px;white-space:nowrap;transition:.15s;display:flex;align-items:center;gap:7px}
+    .tab:hover{color:var(--text);border-color:var(--accent-dim)}
+    .tab.active{color:#050505;background:var(--accent);border-color:var(--accent);font-weight:700}
+    .tab .cnt{font-size:.6rem;color:var(--text-muted);border:1px solid var(--border);border-radius:20px;padding:1px 7px}
+    .tab.active .cnt{color:#050505;border-color:rgba(0,0,0,.35)}
 
-    body {
-      display: flex;
-      flex-direction: column;
-      font-family: 'IBM Plex Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      font-size: 15px;
+    /* ---- stage ---- */
+    .stage{flex:1;min-height:0;overflow-y:auto;padding:32px 24px 64px}
+    .panel{display:none;max-width:1080px;margin:0 auto;animation:fade .35s ease}
+    .panel.active{display:block}
+    @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+    .kicker{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+    .sec-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:22px;flex-wrap:wrap}
+    .sec-title{font-family:var(--display);font-weight:900;font-size:1.9rem;text-transform:uppercase;letter-spacing:.5px;line-height:1}
+
+    /* ---- NOW ---- */
+    .now-hero{background:radial-gradient(900px 360px at 50% -40%,rgba(234,179,8,.10),transparent 60%),linear-gradient(180deg,#0d0d0d,#070707);
+      border:1px solid var(--border);border-radius:16px;padding:34px 28px;text-align:center;margin-bottom:22px;position:relative;overflow:hidden}
+    .now-time{font-family:var(--mono);font-weight:700;font-size:clamp(3rem,11vw,6rem);line-height:1;letter-spacing:2px;
+      background:linear-gradient(130deg,#fef08a,#eab308 55%,#b45309);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+    .now-sub{font-family:var(--mono);color:var(--text-sec);margin-top:14px;font-size:.9rem}
+    .now-sub .abbr{color:var(--accent)}
+    .fmt-toggle{position:absolute;top:16px;right:16px}
+    .btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.68rem;font-weight:700;
+      text-transform:uppercase;letter-spacing:.06em;padding:0 13px;height:34px;border-radius:6px;cursor:pointer;
+      border:1px solid var(--border);background:transparent;color:var(--text-sec);transition:.16s;white-space:nowrap}
+    .btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-faint)}
+    .btn-primary{background:var(--accent);border-color:var(--accent);color:#050505}
+    .btn-primary:hover{background:#fbbf24;color:#050505}
+    .btn.sm{height:28px;font-size:.62rem;padding:0 10px}
+
+    .read-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+    .read{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;cursor:pointer;transition:.16s;position:relative}
+    .read:hover{border-color:var(--accent);background:linear-gradient(145deg,#17120a,#0b0b0b)}
+    .read .lbl{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--text-muted);margin-bottom:6px}
+    .read .val{font-family:var(--mono);font-size:1.02rem;color:var(--text);word-break:break-all}
+    .read .cp{position:absolute;top:12px;right:12px;font-size:.55rem;font-family:var(--mono);color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;opacity:0;transition:.16s}
+    .read:hover .cp{opacity:1}
+
+    /* ---- now dashboard: readouts (left) · clock+map (centre) · selected cities (right) ---- */
+    /* now: full-screen dashboard — big map (left) · clock+readouts+cities (right) · countdowns below */
+    #panel-now{max-width:none}
+    #panel-now.active{height:100%;display:flex;flex-direction:column;overflow:hidden}
+    .now-dash{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,2.4fr) minmax(330px,1fr);grid-template-rows:minmax(0,1fr);gap:22px}
+    .nd-map{min-width:0;min-height:0;display:flex;flex-direction:column}
+    .nd-map .tzmap-wrap{flex:1 1 auto;min-height:0;margin:0}
+    .nd-map .tzmap{width:100%;height:100%}
+    .nd-side{min-width:0;min-height:0;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+    .nd-side .kicker{margin:0}
+    .nd-side .now-hero{flex:none;margin-bottom:0;padding:22px 20px}
+    .nd-side .now-time{font-size:clamp(1.9rem,2.8vw,3rem);letter-spacing:1px}
+    .nd-side .now-sub{font-size:.74rem;margin-top:8px}
+    #nowPinnedWrap{display:flex;flex-direction:column;gap:8px;min-height:0}
+    /* UTC / epoch readouts integrated into the clock card */
+    .now-hero .read-grid{display:flex;flex-direction:column;gap:6px;margin-top:18px;text-align:left}
+    .now-hero .read{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:8px 11px;background:rgba(0,0,0,.26);border-color:#2b2b2b}
+    .now-hero .read:hover{background:rgba(234,179,8,.08)}
+    .now-hero .read .lbl{margin:0;flex:none}
+    .now-hero .read .val{font-size:.82rem;text-align:right;word-break:break-all;line-height:1.3}
+    .now-hero .read .cp{display:none}
+    .nm-wrap{margin:0}
+    .zone-strip.compact{grid-template-columns:1fr;gap:8px}
+    .zone-strip.compact .zone{padding:9px 11px}
+    .zone-strip.compact .z-time{font-size:1.05rem}
+    .zone-strip.compact .z-top{margin-bottom:4px}
+    .zone-strip.compact .z-city{font-size:.78rem}
+    .zone-strip.compact .z-region{display:none}
+    .zone-strip.compact .z-meta{font-size:.56rem;margin-top:3px}
+    .nd-right{min-height:0}
+    .city-marquee{position:relative;overflow:hidden;min-height:0}
+    .city-marquee::after{content:"";position:absolute;left:0;right:0;bottom:0;height:26px;pointer-events:none;
+      background:linear-gradient(transparent,var(--bg));opacity:0;transition:.2s}
+    .city-marquee.scrolling::after{opacity:1}
+    .city-marquee.scrolling #nowPinned{animation-name:cityscroll;animation-timing-function:linear;animation-iteration-count:infinite}
+    .city-marquee.scrolling:hover #nowPinned{animation-play-state:paused}
+    @keyframes cityscroll{from{transform:translateY(0)}to{transform:translateY(calc(-1 * var(--mqshift,50%)))}}
+    @media (prefers-reduced-motion: reduce){ .city-marquee.scrolling #nowPinned{animation:none} }
+    .now-cd-row{margin-top:26px}
+    .now-cd-row .kicker{margin-bottom:12px}
+    .nc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+    .nc-card{background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:11px 13px}
+    .nc-name{font-weight:700;font-size:.9rem}
+    .nc-when{font-family:var(--mono);font-size:.6rem;color:var(--text-muted);margin-top:2px}
+    .nc-rem{font-family:var(--mono);font-size:1.05rem;font-weight:700;color:var(--accent);margin-top:8px}
+    .tz-lead{stroke:var(--accent-dim);stroke-width:.6;opacity:.6}
+    @media (max-width:900px){ .now-dash{grid-template-columns:1fr} }
+
+    /* ---- ZONES ---- */
+    .search{position:relative;flex:1;min-width:220px}
+    .search input{width:100%;height:40px;background:var(--bg-elev);border:1px solid var(--border);border-radius:8px;
+      color:var(--text);font-family:var(--mono);font-size:.82rem;padding:0 14px 0 38px}
+    .search input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-faint)}
+    .search .ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-family:var(--mono)}
+
+    /* ---- day/night world map ---- */
+    .tzmap-wrap{position:relative;margin:0 0 6px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#070b12}
+    .tzmap{display:block;width:100%;height:auto}
+    .tz-ocean{fill:#0a0f18}
+    .tz-land{fill:#20281f;stroke:#31402d;stroke-width:.4;stroke-linejoin:round}
+    .tz-night{fill:rgba(2,5,16,.62);pointer-events:none}
+    .tz-mk{cursor:pointer}
+    .tz-glow{fill:var(--accent);opacity:.22}
+    .tz-dot{fill:var(--accent);stroke:#050505;stroke-width:1.2}
+    .tz-hit{fill:transparent;cursor:pointer}                 /* large invisible click target */
+    .tz-cmk{cursor:pointer}
+    .tz-city{fill:#9fb1c6;stroke:#05070d;stroke-width:.7;opacity:.55;pointer-events:none;transition:fill .15s,opacity .15s,r .15s}
+    .tz-cmk:hover .tz-city{opacity:1;fill:var(--accent);r:3.6}
+    /* hour-zone meridians (toggle) — one line per hour of UTC offset */
+    .tz-hours .hl{stroke:var(--accent);stroke-width:.5;opacity:.26;stroke-dasharray:3 4}
+    .tz-hours .hl0{stroke-width:.9;opacity:.5;stroke-dasharray:none}
+    .tz-hours .hll{font-family:var(--mono);font-size:9px;fill:var(--accent);opacity:.72}
+    .tz-lbl{font-family:var(--mono);font-size:12px;font-weight:600;fill:#fff;paint-order:stroke;stroke:#050505;stroke-width:3.5px;pointer-events:none}
+    .tz-sun{fill:#fde68a;stroke:#eab308;stroke-width:1}
+    .tzmap-legend{position:absolute;bottom:7px;right:10px;font-family:var(--mono);font-size:.56rem;color:var(--text-sec);
+      background:rgba(5,5,5,.55);padding:2px 8px;border-radius:10px;pointer-events:none}
+
+    /* ---- navbar action buttons + count badge ---- */
+    .nav-actions{display:flex;gap:8px;align-items:center}
+    .cnt{font-family:var(--mono);font-size:.6rem;color:var(--text-muted);border:1px solid var(--border);border-radius:20px;padding:1px 7px}
+
+    /* ---- generic modal (Zones / Countdowns popups) ---- */
+    .modal{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:22px}
+    .modal[hidden]{display:none}
+    .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.64);backdrop-filter:blur(3px)}
+    .modal-card{position:relative;z-index:1;display:flex;flex-direction:column;width:min(760px,100%);max-height:min(90vh,940px);
+      background:var(--bg-card);border:1px solid var(--border);border-radius:16px;box-shadow:0 30px 90px rgba(0,0,0,.72);overflow:hidden;animation:fade .2s ease}
+    .modal-card.modal-wide{width:min(1180px,100%)}
+    .modal-head{display:flex;align-items:center;gap:14px;padding:15px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+    .modal-title{font-family:var(--display);font-weight:900;text-transform:uppercase;letter-spacing:.5px;font-size:1.5rem}
+    .modal-head .search{flex:1;min-width:180px}
+    .modal-head .mt-controls{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+    .modal-close{flex:none;width:36px;height:36px;border:1px solid var(--border);background:transparent;color:var(--text-sec);
+      border-radius:9px;cursor:pointer;font-family:var(--mono);font-size:1rem;transition:.15s}
+    .modal-close:hover{border-color:var(--err);color:var(--err);background:rgba(239,68,68,.08)}
+    .modal-body{flex:1;min-height:0;overflow-y:auto;padding:18px}
+    .modal-body.no-scroll{overflow:hidden;display:flex;flex-direction:column;gap:14px}
+    .map-toggle{display:inline-flex;align-items:center;gap:6px}
+    .map-toggle.active{border-color:var(--accent);color:var(--accent);background:var(--accent-faint)}
+    /* zones inside its modal: map fills, selected list scrolls below */
+    .zones-modal-body{height:70vh;max-height:100%}
+    .zones-modal-body .tzmap-wrap{flex:1 1 auto;min-height:0;margin:0}
+    .zones-modal-body .tzmap{width:100%;height:100%}
+    .zones-selected{display:flex;flex-direction:column;min-height:0;flex:0 1 auto;max-height:38%}
+    .zones-selected .divider{flex:none}
+    .zones-selected .zone-strip{flex:1;min-height:0;overflow-y:auto;margin-bottom:0;padding-right:4px}
+    /* timezone-search popup (opens on top of the Zones modal) */
+    .zone-popup{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;padding:24px}
+    .zone-popup[hidden]{display:none}
+    .zp-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(2px)}
+    .zp-card{position:relative;z-index:1;display:flex;flex-direction:column;width:min(720px,100%);max-height:min(80vh,720px);
+      background:var(--bg-card);border:1px solid var(--border);border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.7);overflow:hidden;animation:fade .2s ease}
+    .zp-head{display:flex;gap:10px;align-items:center;padding:14px;border-bottom:1px solid var(--border)}
+    .zp-close{flex:none;width:36px;height:36px;border:1px solid var(--border);background:transparent;color:var(--text-sec);border-radius:8px;cursor:pointer;font-family:var(--mono);transition:.15s}
+    .zp-close:hover{border-color:var(--accent);color:var(--accent)}
+    .zp-card .region-bar{margin:12px 14px 0}
+    .zp-body{flex:1;min-height:0;overflow-y:auto;padding:6px 14px 16px}
+    @media (max-width:900px){
+      .zones-modal-body{height:auto;overflow:visible}
+      .zones-modal-body .tzmap-wrap{flex:none;aspect-ratio:2/1}
     }
+    .region-bar{display:flex;flex-wrap:wrap;gap:6px;margin:22px 0 4px}
+    .region-chip{font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;
+      padding:6px 11px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-sec);transition:.15s}
+    .region-chip:hover{border-color:var(--accent);color:var(--accent)}
+    .region-chip.active{background:var(--accent);border-color:var(--accent);color:#050505;font-weight:700}
+    .region-chip .rc-n{opacity:.6;margin-left:5px}
+    .zone-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-bottom:8px}
+    .divider{font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.14em;color:var(--text-muted);
+      border-bottom:1px solid var(--border);padding-bottom:5px;margin:26px 0 14px}
+    .zgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+    .zone{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;transition:.16s;position:relative}
+    .zone:hover{border-color:#3a3a3a}
+    .zone.pinned{border-color:var(--accent-dim)}
+    .zone .z-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .z-daynight{font-size:.9rem;line-height:1}
+    .z-city{font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+    .z-region{font-family:var(--mono);font-size:.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em}
+    .z-time{font-family:var(--mono);font-size:1.5rem;font-weight:700;letter-spacing:1px}
+    .z-meta{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-family:var(--mono);font-size:.62rem;color:var(--text-sec)}
+    .z-rel{color:var(--accent)}
+    .pin{position:absolute;top:10px;right:10px;width:24px;height:24px;border:1px solid transparent;border-radius:6px;
+      background:transparent;color:var(--text-muted);cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;transition:.15s}
+    .pin:hover{color:var(--accent);border-color:var(--border)}
+    .pin.on{color:var(--accent)}
+    .muted-note{color:var(--text-muted);font-family:var(--mono);font-size:.76rem;text-align:center;padding:2rem}
 
-    /* ─── CS HEADER ─────────────────────────────────────────── */
-    .cs-header {
-      height: 70px; flex-shrink: 0;
-      background: linear-gradient(180deg, #0f0f0f 0%, #050505 100%);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 24px; gap: 12px; z-index: 100;
-    }
-    .cs-left { display: flex; align-items: center; gap: 14px; }
-    .cs-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-    .cs-page-name {
-      font-family: 'Red Hat Display', sans-serif;
-      font-size: 1.4rem; font-weight: 900; line-height: 1;
-      background: linear-gradient(130deg, #fef08a 0%, #eab308 50%, #b45309 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-      white-space: nowrap;
-    }
-    .cs-info { display: flex; align-items: baseline; gap: 10px; border-left: 1px solid var(--border); padding-left: 14px; }
-    .cs-info-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
-    .cs-info-desc  { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: #555; white-space: nowrap; }
-    .cs-icon-btn {
-      width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 4px;
-      display: flex; align-items: center; justify-content: center;
-      color: #555; transition: 0.2s; text-decoration: none; background: transparent; cursor: pointer;
-    }
-    .cs-icon-btn:hover { border-color: var(--accent); color: #050505; background: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(234,179,8,0.15); }
-    .cs-icon-btn svg { width: 15px; height: 15px; }
+    /* ---- COUNTDOWNS ---- */
+    .cd-hero{background:radial-gradient(900px 360px at 50% -40%,rgba(234,179,8,.10),transparent 60%),linear-gradient(180deg,#0d0d0d,#070707);
+      border:1px solid var(--border);border-radius:16px;padding:30px 24px;text-align:center;margin-bottom:22px}
+    .cd-hero .cd-name{font-family:var(--display);font-weight:900;font-size:1.6rem;text-transform:uppercase;letter-spacing:1px}
+    .cd-hero .cd-when{font-family:var(--mono);color:var(--text-sec);font-size:.8rem;margin-top:4px}
+    .cd-clock{display:flex;justify-content:center;gap:14px;margin-top:20px;flex-wrap:wrap}
+    .cd-unit{min-width:74px}
+    .cd-unit .n{font-family:var(--mono);font-weight:700;font-size:clamp(2rem,7vw,3.2rem);line-height:1;
+      background:linear-gradient(130deg,#fef08a,#eab308 55%,#b45309);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+    .cd-unit .u{font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.16em;color:var(--text-muted);margin-top:6px}
 
-    /* 24h toggle in header */
-    .cs-toggle {
-      display: inline-flex; align-items: center; gap: 0.4rem;
-      cursor: pointer; user-select: none;
-      padding: 0.2rem 0.7rem; border-radius: 999px;
-      border: 1px solid var(--border);
-      background: transparent;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.68rem; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: 0.06em;
-      transition: 0.15s;
-    }
-    .cs-toggle:hover { border-color: var(--accent-dim); color: var(--accent); }
-    .cs-toggle input { margin: 0; accent-color: var(--accent); }
+    .cd-add{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;background:var(--bg-card);border:1px solid var(--border);
+      border-radius:var(--radius);padding:14px;margin-bottom:20px}
+    .field{display:flex;flex-direction:column;gap:5px}
+    .field label{font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted)}
+    .field input{height:38px;background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;color:var(--text);
+      font-family:var(--mono);font-size:.8rem;padding:0 10px}
+    .field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-faint)}
+    .field.grow{flex:1;min-width:180px}
+    input[type=date],input[type=time]{color-scheme:dark}
 
-    /* ─── CONTENT WRAP ───────────────────────────────────────── */
-    .content-wrap {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 0;
-      overflow: auto;
-    }
+    .cd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+    .cd-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;transition:.18s;position:relative}
+    .cd-card:hover{border-color:#3a3a3a}
+    .cd-card.passed{opacity:.62}
+    .cd-card .c-name{font-weight:700;font-size:1rem;margin-bottom:2px;padding-right:22px}
+    .cd-card .c-when{font-family:var(--mono);font-size:.66rem;color:var(--text-muted)}
+    .cd-card .c-rem{font-family:var(--mono);font-size:1.15rem;font-weight:700;color:var(--accent);margin-top:12px}
+    .cd-card.passed .c-rem{color:var(--text-sec)}
+    .cd-card .c-x{position:absolute;top:10px;right:10px;width:22px;height:22px;border:none;background:transparent;color:var(--text-muted);
+      cursor:pointer;border-radius:5px;font-size:.9rem;line-height:1;display:flex;align-items:center;justify-content:center;transition:.15s}
+    .cd-card .c-x:hover{color:var(--err);background:rgba(239,68,68,.1)}
+    .pill{font-family:var(--mono);font-size:.55rem;text-transform:uppercase;letter-spacing:.08em;border-radius:20px;padding:2px 8px;border:1px solid;display:inline-block;margin-top:10px}
+    .pill.up{color:var(--ok);border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.08)}
+    .pill.pa{color:var(--text-muted);border-color:var(--border)}
+    .pill.bi{color:var(--accent);border-color:var(--accent-dim);background:var(--accent-faint)}
 
-    .app-shell {
-      width: 100%;
-      max-width: 1040px;
-      padding: 0.85rem 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.85rem;
-    }
+    /* ---- toast ---- */
+    .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(14px);z-index:9999;
+      font-family:var(--mono);font-size:.74rem;font-weight:700;padding:10px 16px;border-radius:8px;
+      border:1px solid rgba(34,197,94,.5);color:#86efac;background:rgba(34,197,94,.12);
+      box-shadow:0 10px 30px rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.22s;max-width:90vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-    .card {
-      background: linear-gradient(135deg, rgba(10,10,10,0.98), rgba(18,18,18,0.98));
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow-soft);
-      padding: 0.9rem 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-    }
-
-    .header-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 0.9rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      font-family: 'IBM Plex Mono', monospace;
-      font-weight: 700;
-      color: var(--text-muted);
-    }
-
-    .badge {
-      font-size: 0.68rem;
-      font-family: 'IBM Plex Mono', monospace;
-      padding: 0.15rem 0.6rem;
-      border-radius: 4px;
-      background: var(--accent-soft);
-      color: var(--accent);
-      border: 1px solid var(--accent-dim);
-    }
-
-    /* Big clocks row */
-    .clocks-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.7rem;
-    }
-
-    .clock-card {
-      flex: 1 1 180px;
-      min-width: 0;
-      padding: 0.7rem 0.85rem;
-      border-radius: 8px;
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
-    .clock-label-top {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.62rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
-    }
-
-    .clock-main-big {
-      font-family: 'IBM Plex Mono', monospace;
-      font-variant-numeric: tabular-nums;
-      font-size: 1.15rem;
-      font-weight: 700;
-      line-height: 1.2;
-      color: var(--text);
-    }
-
-    .clock-meta-big {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.72rem;
-      color: var(--accent);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Search */
-    .filters-row {
-      margin-top: 0.4rem;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.6rem;
-      font-size: 0.85rem;
-    }
-
-    .filter-field { flex: 1 1 230px; }
-
-    .filter-label {
-      display: block;
-      margin-bottom: 0.2rem;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.62rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
-    }
-
-    #search {
-      width: 100%;
-      padding: 0.45rem 0.8rem;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: rgba(8,8,8,0.95);
-      color: var(--text);
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.82rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    #search:focus { border-color: var(--accent); }
-    #search::placeholder { color: var(--text-muted); }
-
-    .filters-hint {
-      color: var(--text-muted);
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.68rem;
-      max-width: 260px;
-      line-height: 1.5;
-    }
-
-    /* Pinned */
-    .pinned-wrapper {
-      margin-top: 0.4rem;
-      display: none;
-      flex-direction: column;
-      gap: 0.3rem;
-    }
-
-    .pinned-header-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-    }
-
-    .pinned-title {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.62rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
-    }
-
-    .pinned-clear-btn {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.62rem;
-      padding: 0.15rem 0.6rem;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      transition: 0.15s;
-    }
-    .pinned-clear-btn:hover { border-color: var(--danger); color: var(--danger); }
-
-    .pinned-grid { display: flex; flex-wrap: wrap; gap: 0.7rem; }
-
-    .pinned-card {
-      flex: 1 1 180px;
-      min-width: 0;
-      font-size: 0.86rem;
-    }
-
-    .pinned-zone { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .pinned-time { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
-    .pinned-meta { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: var(--text-muted); }
-
-    /* Table panel */
-    .main-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .table-shell {
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--bg-elevated);
-      overflow: hidden;
-    }
-
-    /* Capped height: the table scrolls internally instead of pushing the page. */
-    .table-scroll { width: 100%; max-height: min(560px, 60vh); overflow: auto; }
-    .table-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
-    .table-scroll::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      font-size: 0.82rem;
-      min-width: 680px;
-      font-family: 'IBM Plex Mono', monospace;
-    }
-
-    caption {
-      text-align: left;
-      padding: 0.4rem 0.7rem;
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--border);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
-    th, td {
-      padding: 0.35rem 0.65rem;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    th {
-      position: sticky;
-      top: 0;
-      background: var(--bg-header);
-      z-index: 1;
-      font-weight: 700;
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    tbody tr:nth-child(even) { background: var(--bg-row-alt); }
-    tbody tr:hover { background: var(--accent-soft); }
-
-    .pin-cell { width: 2.1rem; text-align: center; }
-
-    .pin-btn {
-      border: none;
-      background: transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-      padding: 0;
-      font-size: 1.1rem;
-      line-height: 1;
-      transition: transform 0.15s;
-    }
-    .pin-btn.pinned { color: var(--accent); transform: translateY(-1px); }
-
-    .zone-flag  { font-size: 1rem; margin-right: 0.25rem; }
-    .zone-name  { font-weight: 600; }
-    .zone-iso   { font-size: 0.72rem; color: var(--text-muted); margin-left: 0.25rem; }
-
-    .no-results { text-align: center; font-style: italic; color: var(--text-muted); }
-    .no-results td { padding: 0.85rem 0.6rem; }
-
-    @media (max-width: 760px) {
-      .app-shell { padding: 0.7rem; }
-      .card { padding: 0.7rem 0.8rem; }
-      .clocks-row { flex-direction: column; }
-      .cs-info-desc { display: none; }
-      th:nth-child(7), td:nth-child(7),
-      th:nth-child(8), td:nth-child(8) { display: none; }
+    @media(max-width:720px){
+      .tabs,.stage{padding-left:14px;padding-right:14px}
+      .cd-add .field.grow{min-width:140px}
     }
   </style>
 </head>
 <body>
 
-<header class="cs-header">
-  <div class="cs-right">
-    <label class="cs-toggle">
-      <input type="checkbox" id="format-toggle" checked>
-      <span>24h</span>
-    </label>
+  <!-- section tabs -->
+  <div class="nav-actions" id="tabs" data-carino-actions>
+    <button class="btn sm" id="openZones">✦ Zones <span class="cnt" id="pinCount">0</span></button>
+    <button class="btn sm" id="openCountdowns">⧗ Countdowns <span class="cnt" id="cdCount">0</span></button>
   </div>
-</header>
 
-<div class="content-wrap">
-<div class="app-shell">
-  <!-- Top card -->
-  <section class="card main-card" aria-label="Current time and pinned zones">
-    <header class="header-row">
-      <div>
-        <h1>World Clock</h1>
-        <span class="badge">Live — IANA time-zone database</span>
+  <main class="stage">
+    <!-- NOW -->
+    <section class="panel active" id="panel-now">
+      <div class="now-dash">
+        <div class="nd-map">
+          <div class="tzmap-wrap nm-wrap">
+            <svg class="tzmap" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Day and night world map">
+              <rect class="tz-ocean" x="0" y="0" width="1000" height="500"></rect>
+              <use href="#worldLand"></use>
+              <path class="tz-night" id="nmNight" d=""></path>
+              <g id="nmHourLines" class="tz-hours" style="display:none"></g>
+              <g id="nmSun"></g>
+              <g id="nmCities"></g>
+              <g id="nmMarkers"></g>
+            </svg>
+            <div class="tzmap-legend">☀ day · 🌙 night · • city · ★ pinned</div>
+          </div>
+        </div>
+        <div class="nd-side">
+          <div class="now-hero">
+            <button class="btn sm fmt-toggle" id="fmtToggle">24-hour</button>
+            <div class="now-time" id="nowTime">00:00:00</div>
+            <div class="now-sub" id="nowSub">—</div>
+            <div class="read-grid" id="readGrid"></div>
+          </div>
+          <div id="nowPinnedWrap" hidden>
+            <div class="kicker">Selected cities</div>
+            <div class="city-marquee" id="cityMarquee">
+              <div class="zone-strip compact" id="nowPinned"></div>
+            </div>
+          </div>
+        </div>
       </div>
-    </header>
+      <div class="now-cd-row">
+        <div class="kicker">Highlighted countdowns</div>
+        <div id="nowCountdowns" class="nc-grid"></div>
+      </div>
+    </section>
 
-    <div class="clocks-row">
-      <div class="clock-card" aria-live="polite">
-        <div class="clock-label-top">Local</div>
-        <div class="clock-main-big" id="local-time"></div>
-        <div class="clock-meta-big" id="local-abbr"></div>
+    <!-- ZONES (popup) -->
+    <div class="modal" id="zonesModal" hidden>
+      <div class="modal-backdrop" id="zonesBackdrop"></div>
+      <div class="modal-card modal-wide">
+        <div class="modal-head">
+          <div class="modal-title">Zones</div>
+          <div class="mt-controls">
+            <button class="btn sm map-toggle" id="toggleHours" aria-pressed="false" title="Show one meridian per hour of UTC offset">◷ Hour lines</button>
+            <button class="btn sm" id="openZoneSearch" title="Search all time zones">⌕ Search zones</button>
+          </div>
+          <button class="modal-close" id="closeZones" aria-label="Close Zones">✕</button>
+        </div>
+        <div class="modal-body no-scroll zones-modal-body">
+          <div class="tzmap-wrap">
+        <svg class="tzmap" id="tzmap" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Day and night world map with pinned zones">
+          <rect class="tz-ocean" x="0" y="0" width="1000" height="500"></rect>
+          <path id="worldLand" class="tz-land" d="M334.5 472.3L333.7 473.7L332.9 475.0L327.1 474.6L320.9 474.8L317.4 473.9L317.4 473.7L315.9 472.9L322.1 473.0L328.1 473.3L330.2 472.2L331.6 471.2L334.5 472.3ZM57.8 470.8L52.4 471.2L48.8 470.2L47.1 469.2L47.0 469.1L45.2 468.3L45.2 468.3L46.9 467.3L52.1 467.7L54.9 468.6L57.0 469.6L57.8 470.8ZM374.6 466.8L378.0 468.0L379.2 469.7L379.5 470.9L379.6 472.3L375.3 473.2L370.8 473.9L365.6 474.5L359.8 475.1L353.2 474.9L349.5 474.0L350.0 472.8L356.0 472.1L358.4 471.2L360.1 470.0L361.3 468.9L363.0 467.9L364.8 466.8L364.8 466.8L366.2 466.8L370.4 466.2L374.6 466.8ZM163.3 454.2L166.9 454.6L170.2 454.1L168.6 455.1L166.0 455.8L162.2 455.6L159.4 454.6L159.4 454.6L160.0 453.7L163.3 454.2ZM151.2 454.1L155.5 455.2L153.8 455.1L150.2 454.8L146.4 454.1L146.4 454.1L148.4 453.5L151.2 454.1ZM225.1 449.8L228.1 450.2L231.1 449.9L232.8 451.4L230.6 451.2L227.2 451.3L223.8 451.2L220.0 451.4L217.2 450.8L215.7 449.7L215.7 449.7L217.5 449.2L221.0 449.6L225.1 449.8ZM309.9 447.1L310.2 448.4L309.7 449.4L308.9 450.5L305.7 450.9L302.6 451.4L298.9 451.3L300.3 450.3L297.0 450.6L293.9 451.0L291.8 450.2L291.6 449.1L294.7 448.0L294.7 448.0L296.6 447.6L299.8 447.8L300.6 446.3L300.8 445.3L300.7 443.1L302.3 441.8L304.9 441.3L306.3 442.4L307.0 443.4L308.2 444.7L309.1 445.8L309.9 447.1ZM337.2 428.2L336.0 428.8L333.9 428.4L331.6 428.6L329.7 429.3L327.7 430.0L326.4 430.8L326.0 431.9L326.1 432.9L327.4 433.9L325.5 434.5L322.9 434.7L321.4 435.7L319.8 436.5L318.0 437.7L317.6 438.8L318.6 439.9L320.0 440.8L322.3 441.4L324.5 442.3L325.6 443.4L326.2 444.4L327.0 445.5L328.3 446.4L329.1 447.5L329.5 450.0L330.3 451.1L330.5 452.2L331.4 453.2L331.0 454.7L329.5 455.9L327.9 456.8L324.2 457.2L322.9 458.1L321.2 459.1L317.1 460.1L313.4 460.5L309.9 461.1L306.1 461.7L303.9 462.9L299.4 463.0L294.5 462.9L290.1 463.1L285.4 463.1L286.3 464.2L290.6 464.7L293.7 465.4L295.4 466.4L292.3 467.3L287.5 467.0L283.5 467.7L283.4 468.9L283.3 469.9L286.5 470.9L287.1 471.9L290.7 472.9L296.5 473.4L301.5 474.1L305.5 475.0L310.6 475.9L317.5 476.3L324.3 477.1L329.0 477.9L334.2 478.8L336.9 480.1L338.3 481.2L341.6 480.2L346.2 479.4L351.1 478.5L356.8 477.8L361.8 477.0L368.7 477.0L375.5 477.4L381.1 478.0L382.9 476.8L386.7 476.0L393.8 475.9L399.3 475.3L404.5 474.7L410.2 474.4L416.4 473.9L420.7 473.2L418.7 472.2L417.5 471.2L417.5 470.2L412.2 470.3L406.4 470.7L401.0 470.7L400.2 469.7L400.6 467.6L401.9 467.0L405.8 466.4L410.5 465.7L413.9 464.9L417.3 464.1L419.8 463.0L423.6 462.5L427.3 462.1L429.2 461.9L433.5 461.8L437.6 461.4L441.0 460.9L444.4 460.2L447.5 459.6L451.3 458.7L453.8 457.8L456.4 456.9L457.2 455.9L454.3 455.2L455.2 454.1L457.1 453.2L460.0 452.6L463.0 452.0L465.9 451.1L468.0 450.0L469.4 448.7L471.4 448.0L474.7 448.1L476.1 449.0L479.4 449.2L479.5 448.1L480.9 447.0L483.9 447.3L484.6 448.3L487.9 448.5L491.5 448.0L495.0 447.7L498.2 447.9L499.4 449.0L502.4 448.1L505.2 447.6L508.4 447.2L511.5 446.8L514.3 446.2L517.4 445.7L519.8 445.1L521.5 444.1L523.6 444.9L526.5 444.5L528.5 445.8L530.0 446.8L533.2 446.2L534.5 445.1L537.3 444.4L540.9 444.5L542.0 445.6L544.3 444.5L547.3 444.2L550.6 444.1L553.5 444.1L556.6 444.5L559.6 444.6L560.9 445.6L562.7 446.4L565.7 445.9L569.0 445.8L572.2 445.8L575.3 445.7L578.0 445.3L581.0 445.0L583.4 444.3L586.0 443.8L588.9 443.5L591.0 442.7L592.5 441.2L594.1 440.3L597.0 440.7L598.1 441.7L600.5 442.4L603.3 442.1L605.3 443.1L607.4 443.8L610.2 443.2L611.2 442.0L613.7 441.5L616.6 440.6L619.3 440.2L622.5 439.6L624.7 439.0L627.0 438.4L629.2 437.8L631.8 438.1L634.3 437.1L636.1 436.4L638.7 436.4L641.0 435.8L641.5 434.8L643.9 434.0L646.2 433.5L648.9 433.0L651.5 432.8L653.9 433.0L656.5 433.3L658.8 434.0L659.0 435.2L661.5 436.1L663.2 436.9L666.5 437.2L668.3 438.0L670.6 438.8L673.3 438.9L675.5 438.4L677.9 437.2L680.5 437.8L683.3 438.2L685.9 438.5L688.6 438.7L691.4 438.7L693.6 441.6L693.5 442.3L693.2 443.6L690.5 444.3L688.4 445.3L688.7 446.4L691.9 446.3L691.5 447.4L690.1 448.4L688.7 449.6L690.9 450.5L694.1 450.7L697.3 450.2L698.8 449.2L699.7 448.1L701.3 447.3L703.0 446.4L703.7 445.5L705.2 444.1L706.9 443.8L710.1 443.7L712.9 443.4L715.7 443.0L717.0 441.9L717.9 440.8L719.8 439.8L722.5 439.1L724.8 438.5L726.3 437.6L727.9 437.1L729.9 436.7L732.7 437.0L735.2 436.7L737.9 436.4L741.0 436.5L743.0 435.8L744.4 433.9L745.4 434.7L746.7 436.0L749.1 436.5L751.8 436.7L754.4 436.4L757.2 436.6L759.9 436.7L761.6 436.4L763.9 436.6L766.1 437.2L768.6 436.8L771.6 436.8L774.1 436.4L777.0 436.8L778.8 435.9L780.3 435.0L782.2 434.2L785.6 432.1L787.4 432.5L789.6 433.3L791.4 434.2L794.9 435.9L797.7 436.0L800.2 436.0L803.2 435.7L806.2 435.3L808.5 434.5L810.4 433.7L813.5 433.6L815.6 433.0L817.7 433.5L819.2 434.4L821.1 435.3L824.2 435.2L826.1 435.9L829.4 436.6L832.9 436.9L835.8 436.6L837.9 435.8L839.8 434.9L842.3 434.7L844.8 435.1L847.7 435.3L850.3 434.9L852.8 434.9L855.2 435.2L857.8 435.4L860.3 435.0L863.3 434.5L866.1 434.4L869.3 434.4L871.8 434.1L874.3 433.9L875.1 432.6L875.2 431.4L876.9 432.2L877.4 433.4L878.4 434.6L879.5 435.5L881.8 436.0L885.0 435.8L888.6 435.8L891.1 435.6L894.8 435.6L897.4 435.5L901.0 435.7L904.1 435.9L906.1 436.7L905.6 437.8L907.4 438.6L910.3 439.3L913.4 440.0L917.0 440.4L920.8 440.9L923.6 441.3L926.8 441.4L928.6 440.4L931.0 441.2L933.1 442.1L935.6 442.7L939.0 443.0L942.2 443.3L943.5 444.4L946.7 445.1L948.8 446.1L951.9 446.5L955.1 446.4L958.1 446.6L961.4 446.5L964.7 446.8L967.8 447.1L970.7 447.8L973.6 448.3L975.6 449.2L975.2 450.2L973.8 451.2L972.5 452.5L971.5 453.5L970.2 454.6L966.6 455.0L965.0 456.0L961.4 456.6L960.1 457.7L958.2 458.7L956.2 459.6L955.1 460.8L954.4 461.8L954.1 463.0L954.1 464.1L955.7 465.2L956.3 466.2L957.6 467.2L962.8 467.6L963.9 468.8L958.9 469.2L954.6 469.8L949.4 469.9L947.0 471.5L946.5 472.8L945.3 473.8L943.9 474.8L947.6 475.8L949.0 476.9L951.4 478.0L954.7 478.9L958.6 479.7L962.8 480.6L969.2 481.5L970.6 482.8L978.6 483.4L979.1 483.7L981.2 484.5L988.8 483.8L995.2 484.6L1000.0 485.3L1000.0 500.0M0.0 500.0L0.0 485.3L0.2 485.3L2.6 483.7L7.6 484.6L7.9 484.5L8.7 484.3L9.7 484.0L10.5 483.7L10.9 483.6L11.3 483.6L11.6 483.7L15.6 484.8L19.1 483.7L19.8 483.5L27.9 483.0L30.6 483.7L31.9 484.0L36.0 484.9L43.9 485.6L50.2 486.5L60.9 487.1L68.9 486.4L80.7 486.9L87.4 487.8L94.8 487.0L102.5 486.2L103.1 484.9L92.1 484.8L83.2 484.2L80.8 483.1L73.4 482.5L73.9 481.2L74.9 480.1L75.9 479.0L75.4 477.9L70.8 477.1L68.6 476.2L64.3 475.3L71.1 475.4L77.5 475.0L81.5 475.9L86.5 475.1L91.1 474.1L93.3 473.2L92.3 472.0L88.7 471.3L84.6 470.4L78.9 470.3L73.9 469.9L68.5 469.6L66.7 468.6L63.1 467.7L61.0 466.7L60.1 463.6L61.5 463.9L64.0 464.7L68.5 464.5L72.9 464.1L75.2 465.3L79.6 465.0L83.3 464.4L86.8 463.6L90.0 462.7L94.2 462.4L94.0 461.4L93.1 460.4L93.9 459.4L97.5 458.9L99.1 459.8L103.3 459.3L106.6 458.6L110.5 458.5L114.3 458.2L118.0 457.6L121.0 457.0L124.4 456.4L126.6 456.6L128.5 456.8L132.6 456.4L136.3 456.9L140.1 456.8L143.8 456.5L147.5 456.7L151.7 457.0L155.5 456.9L159.5 456.9L163.7 457.0L167.5 456.9L170.3 456.1L173.7 455.6L177.2 456.2L180.5 455.7L183.5 454.8L185.3 455.6L186.3 456.6L188.1 457.5L190.9 456.7L194.3 457.8L198.0 458.1L201.2 458.8L205.1 458.7L208.7 458.2L212.9 458.3L216.6 458.7L220.4 459.2L221.9 458.0L220.1 457.0L218.7 456.1L215.2 455.9L213.6 454.8L213.0 453.8L212.0 451.7L214.1 452.1L217.8 452.3L221.4 452.1L224.6 452.5L227.4 453.3L228.6 454.3L232.4 454.5L236.0 454.1L239.8 453.6L243.2 453.2L246.1 453.9L249.8 453.7L252.1 451.6L254.4 452.8L257.6 453.3L261.1 453.0L263.4 454.1L267.0 454.2L270.4 454.5L273.7 455.1L275.9 454.1L277.0 453.1L279.7 454.2L283.5 453.9L286.4 454.5L288.3 455.5L292.0 455.2L294.9 454.6L297.7 453.9L301.1 453.5L305.0 453.2L308.5 452.8L311.2 452.2L312.9 451.3L313.5 450.1L313.2 449.0L312.3 447.9L311.3 446.8L310.5 445.7L309.8 444.7L309.6 443.7L309.9 442.6L311.2 441.5L312.3 440.4L312.7 439.3L312.2 438.1L311.8 437.0L313.2 435.8L314.7 435.0L316.5 433.9L318.4 433.0L320.6 432.2L321.7 431.0L323.3 430.3L325.0 429.6L327.7 429.4L329.4 428.5L331.4 428.0L333.6 427.7L335.7 426.9L337.2 426.1L339.4 425.8L341.0 426.5L340.0 427.4L337.2 428.2ZM311.8 399.6L315.4 401.2L319.3 401.9L318.1 403.3L315.4 403.5L314.0 402.5L313.1 403.6L310.7 404.5L307.7 404.2L305.7 403.3L302.8 402.9L299.3 401.4L296.4 399.9L292.6 396.8L294.9 397.4L298.8 399.2L302.5 400.2L303.9 398.9L304.8 397.0L307.4 395.9L309.3 396.2L309.3 396.2L310.4 397.5L311.8 399.6ZM337.4 391.9L339.6 393.2L338.8 394.2L335.0 395.0L333.8 394.0L331.4 395.3L330.0 394.0L333.3 392.4L335.7 393.1L337.4 391.9ZM695.2 388.1L691.0 388.3L690.9 386.8L691.3 385.6L691.5 385.1L693.3 385.9L695.9 386.3L696.0 386.8L695.2 388.1ZM903.9 363.3L906.6 364.3L908.1 363.9L910.2 363.4L911.9 363.5L912.1 366.8L911.2 367.8L910.9 370.0L909.9 369.3L908.0 371.2L907.4 371.1L905.7 371.0L904.0 368.6L903.6 366.8L902.0 364.3L902.1 363.1L903.9 363.3ZM980.6 363.7L981.2 364.8L983.2 363.7L984.0 364.9L984.0 366.0L983.0 367.3L981.2 369.4L979.8 370.5L980.8 371.8L978.6 371.8L976.3 372.9L975.5 374.7L973.9 377.5L971.8 378.8L970.4 379.6L967.8 379.5L966.0 378.6L963.0 378.4L962.5 377.4L964.0 375.3L967.5 372.6L969.3 372.0L971.3 371.0L973.7 369.5L975.3 368.1L976.6 366.0L977.6 365.3L978.0 363.8L980.0 362.5L980.6 363.7ZM985.0 350.4L987.0 353.4L987.1 351.5L988.4 352.2L988.8 354.3L991.0 355.2L992.9 355.4L994.5 354.4L995.9 354.7L995.2 357.2L994.4 358.8L992.2 358.7L991.5 359.6L991.8 360.8L991.3 361.3L990.3 362.8L988.9 364.7L986.8 365.8L986.3 365.1L985.1 364.7L986.7 362.4L985.8 360.9L982.8 359.7L982.9 358.7L984.9 357.8L985.4 355.6L985.3 353.8L984.1 352.0L984.2 351.5L982.9 350.3L980.7 347.9L979.5 345.9L980.6 345.7L982.1 347.2L984.2 348.0L985.0 350.4ZM964.2 311.6L963.2 312.2L961.6 311.5L959.7 310.2L957.9 308.7L956.0 306.8L955.6 305.8L956.8 305.9L958.4 306.8L959.6 307.8L960.5 308.6L962.8 310.3L964.2 311.6ZM995.5 298.2L996.4 299.0L996.0 300.4L994.3 300.8L992.7 300.5L992.5 299.2L993.5 298.3L994.8 298.6L995.5 298.2ZM998.2 296.7L996.5 297.3L996.1 296.2L997.5 295.6L998.4 295.5L1000.0 294.6L1000.0 296.0L998.2 296.7ZM0.2 295.8L0.0 296.0L0.0 294.6L0.6 294.5L0.2 295.8ZM966.2 295.7L965.3 296.1L964.4 294.9L964.5 294.1L966.2 295.7ZM964.2 291.5L964.6 293.7L963.9 293.4L963.3 293.5L962.9 292.8L962.9 290.6L964.2 291.5ZM639.0 287.7L639.5 291.0L640.2 292.3L639.9 293.6L639.4 294.4L638.5 292.8L638.0 293.6L638.5 295.7L638.3 296.9L637.5 297.5L637.3 299.9L636.2 303.1L634.9 306.9L633.1 312.2L632.1 316.1L630.8 319.3L628.6 319.9L626.1 321.1L624.5 320.4L622.3 319.4L621.6 317.9L621.4 315.5L620.4 313.3L620.2 311.3L620.6 309.3L621.9 308.8L621.9 307.9L623.3 305.8L623.5 304.0L622.9 302.7L622.3 300.9L622.1 298.4L623.1 296.8L623.5 295.0L624.8 294.9L626.4 294.4L627.4 293.9L628.6 293.8L630.2 292.3L632.5 290.5L633.3 289.1L633.0 288.0L634.1 288.3L635.7 286.4L635.7 284.7L636.7 283.4L637.6 284.6L638.4 285.8L639.0 287.7ZM898.8 288.2L899.8 290.4L901.6 289.4L902.5 290.5L903.8 291.6L903.5 292.9L904.1 295.2L904.5 296.6L905.2 297.0L906.0 299.3L905.7 300.8L906.6 302.7L909.6 304.1L911.6 305.4L913.5 306.6L913.1 307.3L914.7 309.1L915.8 312.1L916.9 311.5L918.0 312.7L918.7 312.2L919.2 315.2L921.1 316.9L922.4 317.9L924.6 320.2L925.4 322.4L925.4 324.0L925.3 325.7L926.6 328.1L926.4 330.5L925.9 331.8L925.2 334.3L925.2 335.9L924.7 337.9L923.5 340.4L921.4 341.8L920.4 343.9L919.5 345.3L918.7 347.7L917.6 349.1L916.9 351.2L916.5 353.1L916.7 354.0L915.1 354.9L912.0 355.0L909.4 356.2L908.1 357.2L906.4 358.4L904.1 357.2L902.4 356.7L902.9 355.3L901.3 355.8L898.9 357.8L896.5 357.1L894.9 356.6L893.4 356.4L890.7 355.6L888.9 353.9L888.4 351.8L887.7 350.4L886.3 349.3L883.7 348.9L884.6 347.6L883.9 345.5L882.6 347.4L880.1 347.9L881.5 346.4L882.0 344.8L883.0 343.4L882.8 341.4L880.5 343.8L878.8 344.7L877.7 346.9L875.6 345.8L875.7 344.3L873.9 342.3L872.5 341.2L873.0 340.6L869.4 338.9L867.5 338.8L864.8 337.5L859.8 337.8L856.2 338.7L853.1 339.7L850.4 339.5L847.5 340.9L845.1 341.6L844.5 343.0L843.5 344.1L841.1 344.2L839.4 344.5L836.9 343.9L834.9 344.3L833.0 344.4L831.4 345.9L830.6 345.7L829.2 346.5L827.8 347.4L825.8 347.3L824.0 347.3L821.0 345.5L819.5 345.0L819.6 343.4L821.0 343.0L821.4 342.4L821.3 341.4L821.7 339.5L821.4 337.8L819.9 335.0L819.4 333.4L819.6 331.8L818.4 330.0L818.4 329.2L817.1 328.1L816.8 325.9L815.2 323.7L814.8 322.5L816.1 323.7L815.1 321.2L816.5 322.0L817.3 323.1L817.3 321.6L815.9 319.4L815.6 318.6L815.0 317.7L815.3 316.1L815.9 315.4L816.2 314.1L815.9 312.4L817.1 310.4L817.3 312.5L818.5 310.6L820.7 309.7L822.1 308.5L824.2 307.5L825.5 307.3L826.2 307.6L828.4 306.6L830.1 306.3L830.5 305.7L831.3 305.4L832.8 305.5L835.7 304.7L837.2 303.4L837.9 302.0L839.6 300.5L839.7 299.4L839.8 297.9L841.7 295.6L842.9 298.0L844.1 297.4L843.1 296.1L843.9 294.8L845.2 295.4L845.5 293.2L847.0 291.9L847.7 290.8L849.1 290.3L849.1 289.5L850.3 289.9L850.4 289.2L851.6 288.8L853.0 288.4L855.0 289.7L856.6 291.3L858.3 291.3L860.1 291.6L859.5 290.1L860.8 287.8L862.1 287.1L861.6 286.4L862.8 284.8L864.5 283.8L865.9 284.2L868.3 283.7L868.2 282.2L866.2 281.3L867.7 280.9L869.5 281.6L871.0 282.7L873.3 283.5L874.1 283.2L875.8 284.0L877.5 283.2L878.5 283.5L879.1 282.9L880.4 284.3L879.7 285.8L878.6 286.9L877.7 287.0L878.0 288.1L877.2 289.5L876.2 290.9L876.4 291.7L878.6 293.2L880.7 294.1L882.2 295.0L884.2 296.7L885.0 296.7L886.4 297.4L886.8 298.3L889.5 299.2L891.3 298.2L891.9 296.8L892.4 295.5L892.8 294.0L893.6 291.8L893.2 290.4L893.4 289.6L893.1 288.1L893.5 286.0L894.0 285.4L893.6 284.5L894.2 283.0L894.8 281.5L894.8 280.7L895.9 279.6L896.7 281.0L896.9 282.7L897.5 283.1L897.7 284.2L898.7 285.7L898.9 287.2L898.8 288.2ZM950.3 279.1L951.1 280.1L949.2 280.1L948.1 278.3L949.8 279.0L950.3 279.1ZM835.3 278.4L834.2 278.5L830.5 276.5L833.1 276.0L834.5 276.8L835.5 277.7L835.3 278.4ZM946.8 277.4L945.7 277.5L944.0 277.2L943.4 276.8L943.6 275.7L945.5 276.1L946.4 276.7L946.8 277.4ZM949.1 276.7L948.7 277.2L946.6 274.8L946.1 273.1L947.0 273.1L948.0 275.3L949.1 276.7ZM845.7 278.2L843.3 278.8L842.9 278.4L843.2 277.5L844.4 275.8L847.1 274.7L847.5 274.0L849.9 273.4L851.8 273.3L852.7 273.0L853.7 273.3L852.7 274.1L849.8 275.3L847.5 276.1L845.7 278.2ZM827.5 272.5L828.5 273.2L830.2 273.0L830.9 274.2L827.7 274.7L825.8 275.1L824.3 275.1L825.2 273.5L826.8 273.5L827.5 272.5ZM841.4 272.5L841.0 274.0L836.8 274.8L833.1 274.5L833.1 273.5L835.3 272.9L837.1 273.7L838.9 273.5L841.4 272.5ZM944.1 273.2L944.2 273.7L942.0 272.5L940.5 271.5L939.5 270.6L939.9 270.3L941.2 271.0L943.4 272.3L944.1 273.2ZM937.6 270.4L937.1 270.6L935.8 269.9L934.7 268.8L934.8 268.3L936.5 269.5L937.6 270.4ZM801.7 268.8L807.1 269.1L807.7 268.0L812.8 269.3L813.8 271.1L818.0 271.6L821.4 273.3L818.2 274.3L815.2 273.2L812.7 273.3L809.8 273.1L807.2 272.6L804.0 271.5L801.9 271.2L800.8 271.6L795.7 270.4L795.2 269.2L792.7 269.0L794.6 266.4L798.0 266.5L800.2 267.6L801.4 267.8L801.7 268.8ZM874.2 267.3L872.8 269.2L872.5 267.1L873.0 266.1L873.6 265.1L874.2 265.9L874.2 267.3ZM933.0 268.9L932.2 269.2L931.0 268.2L929.8 266.4L929.2 264.3L929.6 264.0L929.9 264.8L930.7 265.5L932.1 267.2L933.4 268.2L933.0 268.9ZM922.2 265.2L920.7 265.4L920.3 266.2L918.8 266.9L917.3 267.5L915.9 267.5L913.6 266.7L912.0 266.0L912.2 265.1L914.7 265.5L916.2 265.3L916.7 264.0L917.1 263.9L917.3 265.4L918.9 265.2L919.7 264.2L921.2 263.2L920.9 261.6L922.6 261.5L923.2 262.0L923.1 263.5L922.2 265.2ZM853.5 259.6L852.4 260.5L850.5 260.0L850.0 258.8L852.8 258.7L853.5 259.6ZM862.4 258.6L863.4 260.7L861.1 259.6L858.8 259.3L857.2 259.5L855.3 259.4L855.9 257.9L859.4 257.8L862.4 258.6ZM925.4 262.5L924.5 263.2L924.0 261.6L923.4 260.5L922.1 259.6L920.5 258.4L918.5 257.6L919.3 256.9L920.8 257.7L921.7 258.3L922.9 259.0L924.0 260.2L925.1 261.1L925.4 262.5ZM872.6 253.2L873.4 257.7L876.3 259.4L878.6 256.4L881.8 254.7L884.2 254.7L886.6 255.7L888.7 256.7L891.7 257.2L896.5 259.1L901.6 260.7L903.5 262.1L905.1 263.5L905.5 265.2L910.1 266.9L910.8 268.4L908.3 268.7L908.9 270.5L911.3 272.3L913.2 275.3L914.7 275.2L914.6 276.4L916.8 276.9L915.9 277.4L918.9 278.6L918.6 279.4L916.7 279.6L916.1 278.9L913.7 278.6L910.9 278.1L908.7 276.4L907.1 274.8L905.7 272.4L902.1 271.2L899.7 272.0L898.0 272.9L898.4 275.0L896.2 275.9L894.6 275.4L891.8 275.3L889.3 273.0L886.5 272.5L885.8 273.3L882.3 273.4L883.4 271.1L885.2 270.3L884.5 267.3L883.1 265.0L877.7 262.6L875.5 262.4L871.3 259.8L870.5 261.2L869.4 261.4L868.8 260.4L868.8 259.2L866.6 257.8L869.6 256.8L871.6 256.9L871.4 256.2L867.3 256.1L866.2 254.5L863.7 254.0L862.6 252.6L866.3 251.9L867.7 251.0L872.2 252.2L872.6 253.2ZM847.9 246.1L845.7 248.8L843.6 249.3L840.9 248.8L836.3 248.9L833.8 249.3L833.4 251.4L835.9 253.9L837.4 252.7L842.6 251.7L842.4 253.0L841.2 252.6L840.0 254.2L837.5 255.3L840.2 258.9L839.6 259.8L842.1 263.0L842.1 264.8L840.6 265.7L839.5 264.7L840.9 262.4L838.2 263.5L837.5 262.7L837.8 261.6L835.8 260.0L836.0 257.3L834.2 258.1L834.4 261.4L834.5 265.4L832.8 265.8L831.6 264.9L832.4 262.4L831.9 259.7L830.8 259.7L829.9 257.8L831.1 256.0L831.5 253.8L832.8 249.6L833.4 248.4L835.8 246.4L838.0 247.2L841.5 247.6L844.7 247.5L847.4 245.4L847.9 246.1ZM857.5 246.9L857.3 249.3L855.9 249.0L855.5 250.7L856.6 252.2L855.8 252.5L854.7 250.7L853.9 247.2L854.4 245.0L855.4 244.0L855.6 245.5L857.2 245.7L857.5 246.9ZM793.9 266.3L790.9 266.3L788.5 264.0L785.0 261.7L783.8 260.0L781.7 257.8L780.3 255.7L778.2 251.8L775.7 249.5L774.9 247.1L773.9 244.9L771.4 243.2L769.9 240.8L767.8 239.3L764.9 236.2L764.7 234.8L766.5 234.9L770.8 235.4L773.2 238.1L775.4 240.0L776.9 241.2L779.6 244.2L782.4 244.2L784.7 246.1L786.3 248.4L788.4 249.7L787.3 252.0L788.9 252.9L789.9 253.0L790.4 255.0L791.4 256.5L793.4 256.7L794.7 258.5L794.0 262.0L793.9 266.3ZM827.4 244.9L830.5 247.5L827.3 247.8L826.3 249.7L826.4 252.2L823.8 254.1L823.7 256.9L822.6 261.1L822.2 260.2L819.1 261.4L818.0 259.7L816.0 259.6L814.6 258.7L811.3 259.7L810.3 258.3L808.5 258.5L806.2 258.2L805.8 254.4L804.4 253.7L803.0 251.3L802.6 248.8L803.0 246.3L804.6 244.4L806.7 245.4L808.8 244.9L809.4 242.5L810.5 242.0L813.9 241.4L815.9 239.2L817.2 237.4L818.3 236.4L820.7 234.9L822.8 232.9L824.2 230.8L825.4 230.8L826.8 232.2L826.9 233.4L828.7 234.1L831.1 235.0L830.9 236.1L829.0 236.2L829.5 237.6L827.5 238.5L825.9 241.0L827.9 243.6L827.4 244.9ZM851.0 226.6L851.3 228.5L851.5 230.0L850.5 232.6L849.5 229.7L848.2 231.1L849.1 233.2L848.3 234.5L845.1 232.9L844.3 230.9L845.1 229.6L843.4 228.2L842.5 229.4L841.2 229.3L839.1 230.8L838.7 230.0L839.8 227.7L841.5 226.9L843.0 225.9L844.0 227.1L846.1 226.3L846.6 225.1L848.5 225.0L848.4 222.9L850.6 224.2L850.9 225.6L851.0 226.6ZM725.6 232.8L723.2 233.4L721.9 231.2L721.4 227.2L722.6 222.7L724.6 224.3L725.8 226.2L727.2 229.1L726.8 232.0L725.6 232.8ZM330.7 221.9L328.4 222.2L327.9 222.0L328.7 221.2L328.7 220.1L330.3 219.8L330.8 219.8L330.7 221.9ZM844.4 221.4L843.4 222.4L842.5 224.1L841.7 224.9L839.9 223.0L840.5 222.3L841.2 221.5L841.5 219.8L843.1 219.6L842.6 221.5L844.7 218.8L844.4 221.4ZM829.2 224.1L825.5 226.8L826.8 224.8L828.9 223.1L830.5 221.2L832.0 218.4L832.5 220.7L830.6 222.2L829.2 224.1ZM838.6 217.0L840.2 217.8L842.0 217.8L841.9 219.0L840.7 220.2L838.9 221.0L838.8 219.7L839.0 218.3L838.6 217.0ZM848.6 216.2L849.4 219.3L847.3 218.6L847.3 219.5L848.0 221.2L846.7 221.8L846.6 219.9L845.7 219.8L845.3 218.1L846.9 218.3L846.9 217.2L845.2 215.1L847.9 215.2L848.6 216.2ZM837.6 213.7L836.8 216.1L835.6 214.7L834.2 212.6L836.6 212.7L837.6 213.7ZM837.0 198.6L838.7 199.4L839.6 198.7L839.8 199.4L839.4 200.5L840.3 202.5L839.6 204.8L838.0 205.7L837.5 208.0L838.1 210.2L839.6 210.5L840.8 210.2L844.3 211.7L844.0 213.2L844.9 213.9L844.7 215.2L842.5 213.8L841.5 212.4L840.8 213.4L839.0 211.7L836.5 212.1L835.1 211.5L835.2 210.4L836.1 209.7L835.3 209.0L834.9 210.0L833.5 208.4L833.1 207.2L833.0 204.5L834.1 205.5L834.4 201.1L835.3 198.6L837.0 198.6ZM317.8 199.4L317.1 200.1L315.0 200.1L313.4 200.1L313.2 199.0L313.6 198.6L315.9 198.6L317.3 198.8L317.8 199.4ZM286.4 200.4L285.5 200.8L284.0 200.4L282.4 199.4L282.7 198.7L283.9 198.5L284.5 198.6L286.4 198.9L287.9 199.6L288.3 200.3L286.4 200.4ZM298.4 194.8L300.8 195.2L301.1 194.8L303.3 194.8L305.0 195.5L305.7 195.4L306.2 196.4L307.7 196.4L307.6 197.2L308.9 197.3L310.2 198.3L309.2 199.4L307.9 198.8L306.6 198.9L305.7 198.8L305.2 199.3L304.1 199.5L303.7 198.8L302.8 199.2L301.7 201.1L301.0 200.7L300.8 199.9L299.0 199.4L297.7 199.6L296.0 199.4L294.7 199.9L293.2 199.0L293.4 198.2L296.0 198.5L298.1 198.8L299.1 198.1L297.8 196.9L297.8 195.9L296.1 195.4L296.7 194.7L298.4 194.8ZM806.5 198.1L804.1 199.5L801.8 198.6L801.7 196.2L803.1 194.9L806.1 194.2L807.7 194.2L808.4 195.3L807.1 196.5L806.5 198.1ZM67.9 197.0L67.5 197.5L66.8 197.1L66.9 196.3L66.5 195.3L66.6 195.0L67.1 194.5L66.9 194.0L67.1 193.7L67.3 193.8L68.3 194.2L68.8 194.5L69.3 194.8L70.0 195.8L69.9 196.0L68.8 196.6L67.9 197.0ZM66.4 192.7L65.5 192.9L65.0 192.3L64.7 192.0L64.7 191.9L65.0 191.6L66.0 191.9L66.7 192.3L66.4 192.7ZM64.6 191.2L64.5 191.5L63.0 191.4L63.2 191.1L64.6 191.2ZM62.1 190.8L61.9 190.9L61.7 190.9L60.8 190.8L60.4 190.2L60.3 190.1L61.0 189.7L61.3 189.9L62.1 190.8ZM57.4 188.9L57.0 189.2L56.1 188.7L56.3 188.5L56.7 188.2L57.3 188.3L57.4 188.9ZM278.7 186.8L279.8 187.8L282.4 187.5L283.4 188.1L285.7 189.8L287.4 191.1L288.3 191.1L290.0 191.6L289.8 192.4L291.9 192.5L293.9 193.7L293.6 194.3L291.8 194.7L289.9 194.8L288.0 194.6L284.0 194.8L285.9 193.3L284.7 192.6L283.0 192.4L282.0 191.6L281.3 190.0L279.8 190.1L277.2 189.4L276.3 188.8L272.7 188.4L271.8 187.8L272.8 187.1L270.1 187.0L268.1 188.4L266.9 188.5L266.5 189.1L265.1 189.4L264.0 189.2L265.4 188.3L266.0 187.3L267.3 186.7L268.7 186.2L270.8 185.9L271.5 185.6L273.9 185.8L276.1 185.8L278.7 186.8ZM284.6 184.0L283.9 184.1L283.2 182.5L282.2 181.7L282.8 180.0L283.6 180.1L284.6 182.4L284.6 184.0ZM836.6 186.7L835.4 189.0L833.9 186.6L833.6 184.6L835.3 181.8L837.5 179.7L838.8 180.6L838.3 182.2L836.6 186.7ZM283.8 176.2L280.8 176.6L280.6 175.6L281.9 175.4L283.8 175.4L283.8 176.2ZM286.1 176.1L285.6 178.1L285.1 177.8L285.2 176.3L283.9 175.2L283.9 174.9L286.1 176.1ZM874.0 155.1L874.4 156.1L872.8 157.8L871.6 156.9L870.2 157.5L869.5 159.2L867.7 158.4L867.7 157.0L869.2 155.4L870.8 155.7L872.0 154.5L874.0 155.1ZM596.0 150.9L594.2 152.1L594.4 152.6L594.5 152.8L591.6 154.0L590.3 153.6L589.6 152.5L590.9 152.4L591.1 152.4L591.5 151.7L593.5 151.7L596.0 150.9ZM565.8 150.8L567.4 151.8L569.5 151.6L571.6 151.8L571.5 152.3L573.0 151.9L572.7 152.8L568.7 153.0L568.7 152.5L565.3 152.0L565.8 150.8ZM543.1 143.8L542.1 146.0L542.5 146.8L541.9 148.3L539.8 147.2L538.4 146.9L534.5 145.5L534.9 144.1L538.2 144.3L541.0 144.0L543.1 143.8ZM525.6 135.5L527.2 137.5L526.9 141.2L525.6 141.0L524.5 141.9L523.4 141.2L523.3 137.8L522.7 136.2L524.2 136.4L525.6 135.5ZM891.6 146.8L890.6 149.0L891.0 150.4L889.6 152.4L886.0 153.7L881.2 153.9L877.2 157.0L875.3 156.0L875.2 153.9L870.4 154.5L867.1 155.8L863.9 155.9L866.7 157.9L864.8 162.6L863.0 163.8L861.7 162.7L862.4 160.2L860.6 159.4L859.5 157.5L862.1 156.7L863.6 154.9L866.3 153.5L868.4 151.6L873.9 150.7L876.9 151.3L879.8 146.4L881.6 147.7L885.7 144.9L887.3 143.8L889.0 140.4L888.6 137.3L889.7 135.6L892.7 135.1L894.2 138.9L894.1 141.2L891.6 144.0L891.6 146.8ZM526.6 132.9L525.6 135.1L524.4 134.5L523.7 132.6L524.3 131.6L526.1 130.5L526.6 132.9ZM899.8 127.3L901.7 127.9L903.7 126.7L904.3 129.8L900.2 130.6L897.7 133.3L893.4 131.4L891.9 134.5L888.8 134.5L888.4 131.8L889.8 129.6L892.7 129.5L893.5 125.6L894.4 123.5L897.6 126.4L899.8 127.3ZM323.2 120.7L325.2 121.1L327.7 121.0L326.4 122.1L325.3 122.3L321.8 121.1L321.1 120.2L322.2 119.3L323.2 120.7ZM328.3 113.6L327.0 113.6L323.4 112.8L320.8 111.5L321.7 111.2L325.4 111.9L328.2 113.1L328.3 113.6ZM156.9 115.2L155.5 115.6L151.0 114.4L150.1 113.4L147.6 112.4L147.1 111.6L144.3 111.1L143.2 109.6L143.4 109.0L146.4 109.6L148.1 110.0L150.7 110.3L151.6 111.2L153.0 112.6L155.8 113.7L156.9 115.2ZM344.1 109.2L342.2 111.6L344.0 110.7L345.9 111.3L344.9 112.3L347.4 113.0L348.7 112.3L351.5 113.2L350.6 115.2L352.5 114.8L352.9 116.2L353.8 118.0L352.6 120.4L351.3 120.5L349.5 120.0L350.1 117.7L349.3 117.4L346.1 119.8L344.5 119.7L346.4 118.4L343.7 117.7L340.8 117.9L335.4 117.8L334.9 116.9L336.7 116.0L335.5 115.2L337.8 113.5L340.7 109.1L342.4 107.5L344.8 106.6L346.1 106.7L345.6 107.5L344.1 109.2ZM131.4 99.9L131.4 99.9L131.4 99.9L131.4 99.9L134.0 99.7L133.2 102.8L135.6 105.1L134.5 105.0L132.8 103.8L131.8 102.5L130.4 101.6L129.9 100.4L130.1 99.5L131.4 99.9ZM899.0 109.0L901.8 114.0L897.7 113.0L896.0 117.1L898.7 119.9L898.6 121.8L896.5 120.2L894.7 122.3L894.2 120.0L894.5 117.3L894.2 114.3L894.8 112.2L894.9 108.5L893.3 105.7L893.6 101.9L896.1 100.7L895.0 99.4L896.3 99.0L897.0 100.8L897.9 103.5L897.9 106.2L899.0 109.0ZM481.1 104.8L476.2 106.5L472.3 106.1L474.5 103.2L473.1 100.3L476.9 98.2L479.0 96.9L481.3 96.7L484.3 98.5L482.8 100.4L483.2 102.4L481.1 104.8ZM535.3 95.5L533.6 97.8L530.7 96.2L530.3 95.1L534.4 94.1L535.3 95.5ZM75.0 91.3L72.2 92.4L70.8 91.7L70.4 90.4L72.9 89.4L74.4 89.0L76.2 89.2L77.4 90.0L75.0 91.3ZM491.7 87.1L488.7 90.1L491.5 89.7L494.6 89.8L493.8 92.0L491.3 94.5L494.2 94.7L496.9 98.3L498.8 98.7L500.5 101.9L501.3 103.0L504.7 103.5L504.3 105.3L502.9 106.1L504.0 107.5L501.5 109.0L497.8 109.0L493.1 109.7L491.8 109.2L490.0 110.5L487.4 110.2L485.4 111.2L484.0 110.7L488.0 107.7L490.5 107.1L486.2 106.7L485.4 105.6L488.3 104.7L486.7 103.2L487.3 101.4L491.4 101.7L491.8 100.0L489.9 98.3L486.5 97.8L485.9 97.1L486.9 95.8L486.0 95.0L484.5 96.4L484.3 93.7L482.9 92.3L483.9 89.4L486.1 87.1L488.3 87.4L491.7 87.1ZM40.1 83.6L38.4 84.0L36.5 83.5L34.8 82.7L37.6 82.3L39.8 82.5L40.1 83.6ZM279.8 77.3L278.7 78.8L277.5 78.6L276.8 77.7L276.9 77.5L278.0 76.7L279.1 76.8L279.8 77.3ZM272.5 75.8L269.3 77.3L267.3 77.3L266.7 76.5L268.7 75.2L272.6 75.3L272.5 75.8ZM23.0 72.8L24.7 73.4L26.4 73.1L28.7 73.8L31.4 74.2L31.2 74.5L29.1 75.1L27.0 74.5L25.9 74.0L23.5 74.1L22.8 73.9L23.0 72.8ZM263.4 67.6L264.0 68.8L265.4 68.4L267.0 69.1L270.0 70.1L273.2 71.0L273.5 72.3L275.5 72.1L277.5 73.0L275.0 73.9L270.7 73.2L269.1 71.9L266.4 73.4L262.4 74.9L261.5 73.2L257.7 73.5L260.1 72.1L260.5 69.9L261.4 67.4L263.4 67.6ZM459.7 65.4L459.1 67.2L462.2 69.1L458.6 71.2L450.6 73.1L448.2 73.6L444.5 73.2L436.8 72.3L439.5 71.1L433.5 69.7L438.4 69.2L438.3 68.4L432.4 67.7L434.3 65.9L438.5 65.5L442.8 67.4L447.1 65.9L450.6 66.7L455.1 65.2L459.7 65.4ZM289.3 63.5L286.1 63.6L285.5 62.3L286.6 60.7L289.2 60.3L291.3 61.1L291.4 62.3L291.1 62.7L289.3 63.5ZM13.8 65.0L15.7 65.7L15.1 63.7L22.6 64.1L28.1 66.7L25.3 67.9L20.7 68.2L20.7 70.9L19.6 71.5L17.0 71.4L14.9 70.5L11.2 69.7L10.5 68.5L7.7 68.0L4.6 68.4L3.0 67.4L3.6 66.4L0.3 67.0L1.6 68.3L0.0 69.5L0.0 58.4L6.8 60.6L14.1 63.3L13.8 65.0ZM234.3 58.0L232.6 59.0L228.8 58.2L226.6 58.5L222.8 57.2L225.2 56.4L227.2 55.2L230.1 55.9L231.8 56.4L232.6 57.0L234.3 58.0ZM1000.0 53.2L997.0 53.4L996.5 52.5L1000.0 51.3L1000.0 53.2ZM3.6 53.1L0.0 53.2L0.0 51.3L0.4 51.2L2.7 51.2L6.7 52.0L6.5 52.4L3.6 53.1ZM248.5 57.0L248.5 59.8L252.2 57.6L255.5 59.4L254.7 61.5L257.4 63.3L260.3 61.3L262.3 58.9L262.4 55.9L266.4 56.1L270.5 56.5L274.2 57.9L274.4 59.3L272.3 60.7L274.3 62.2L273.9 63.6L268.5 65.5L264.6 66.0L261.8 65.1L260.9 66.5L258.2 68.9L257.4 70.1L254.2 71.9L250.2 72.1L248.0 73.3L247.9 75.1L244.6 75.5L241.2 77.7L238.2 80.8L237.1 83.0L237.0 86.3L241.1 86.7L242.3 89.3L243.6 91.4L247.5 90.9L252.7 92.1L255.4 93.1L257.4 94.4L260.9 95.2L263.9 96.4L268.4 96.5L271.5 96.8L271.0 99.2L271.9 102.0L273.9 105.1L278.0 107.8L280.2 106.9L281.7 104.0L280.2 99.6L278.3 98.1L282.7 96.8L285.8 94.9L287.4 93.0L287.2 91.1L285.3 88.7L281.9 86.7L285.2 83.7L284.0 81.2L283.0 76.9L285.0 76.2L289.7 77.0L292.6 77.3L294.9 76.5L297.5 77.5L300.9 79.1L301.7 80.2L306.7 80.4L306.6 82.7L307.5 86.2L310.1 86.7L312.1 88.3L316.1 86.8L318.8 83.7L320.6 82.4L322.8 84.9L326.4 88.4L329.5 91.8L328.3 93.5L332.0 95.1L334.5 96.7L339.0 97.4L340.7 98.3L341.8 100.6L344.0 101.0L345.1 102.0L345.3 105.1L343.3 106.2L341.3 107.2L336.7 108.2L333.2 110.4L328.5 110.9L322.6 110.3L318.4 110.3L315.6 110.5L313.2 112.5L309.7 113.7L305.7 117.4L302.5 119.9L304.8 119.5L309.3 115.8L315.1 113.5L319.3 113.2L321.7 114.6L319.1 116.5L320.0 119.5L320.9 121.6L324.5 122.9L329.1 122.5L331.9 119.4L332.1 121.4L333.9 122.4L330.4 124.3L324.3 125.9L321.5 127.0L318.4 129.0L316.3 128.8L316.2 126.5L321.0 124.2L316.6 124.3L313.5 124.6L314.0 125.5L311.0 126.9L308.2 127.8L305.2 128.7L303.6 130.5L303.3 130.9L303.3 132.4L304.2 133.9L305.3 133.9L305.0 132.9L305.9 133.5L305.7 134.3L303.8 134.8L302.4 134.7L300.4 135.2L299.2 135.4L297.6 135.5L295.2 136.3L299.3 135.8L300.2 136.3L296.3 137.1L294.5 137.1L294.6 136.8L293.7 137.6L294.5 137.7L293.9 139.7L291.9 141.8L291.7 141.1L291.1 141.0L290.2 140.3L290.8 141.8L291.4 142.3L291.5 143.3L290.6 144.4L289.1 146.6L288.8 146.5L289.7 144.6L288.2 143.6L287.9 141.2L287.4 142.5L288.0 144.2L286.2 143.8L288.1 144.7L288.2 147.3L289.0 147.5L289.3 148.5L289.6 151.2L287.9 153.3L285.0 154.1L283.2 155.8L281.8 155.9L280.4 157.0L280.0 157.9L276.9 159.7L275.4 161.0L274.1 162.7L273.6 164.6L274.1 166.6L275.1 168.9L276.3 170.9L276.3 172.1L277.6 175.3L277.5 177.2L277.4 178.3L276.7 180.0L275.9 180.3L274.5 180.0L274.1 178.8L273.0 178.1L271.6 175.7L270.3 173.6L269.8 172.5L270.4 170.7L269.6 169.2L267.5 166.8L266.4 166.4L263.6 167.7L263.1 167.5L261.7 166.2L260.0 165.6L256.9 165.9L254.4 165.6L252.3 165.8L251.1 166.2L251.6 167.0L251.6 168.1L252.2 168.6L251.6 169.0L250.6 168.6L249.6 169.1L247.6 169.0L245.5 167.6L243.1 167.9L241.0 167.3L239.3 167.5L237.0 168.1L234.4 170.2L231.7 171.4L230.2 172.7L229.5 173.9L229.5 175.9L229.6 177.2L230.2 178.1L230.2 178.1L230.2 178.2L229.1 180.6L228.6 182.6L228.4 186.3L228.1 187.7L228.6 189.2L229.5 190.5L230.0 192.7L231.9 194.7L232.5 196.3L233.6 197.7L236.6 198.4L237.7 199.6L240.1 198.8L242.3 198.5L244.3 198.0L246.1 197.6L247.9 196.4L248.5 194.8L248.7 192.5L249.2 191.7L251.1 190.9L254.0 190.3L256.5 190.4L258.2 190.2L258.9 190.7L258.8 192.1L257.3 193.7L256.6 195.4L257.1 195.9L256.7 197.1L256.0 199.3L255.3 198.6L254.7 198.6L254.7 199.0L255.3 199.0L255.2 199.8L254.8 201.0L255.0 201.4L254.7 202.4L254.9 202.7L254.6 204.1L254.0 204.8L253.5 204.9L253.0 205.9L253.9 206.4L254.1 206.0L254.9 206.3L255.2 206.4L255.8 205.9L256.6 205.9L256.9 206.1L257.3 206.0L258.6 206.2L259.9 206.2L260.8 205.9L261.1 205.5L262.0 205.7L262.7 205.9L263.4 205.8L263.9 205.6L265.2 206.0L265.6 206.0L266.5 206.5L267.3 207.2L268.3 207.6L269.0 208.3L268.8 208.6L268.7 209.2L268.9 210.2L268.3 211.2L268.0 212.3L267.9 213.5L268.1 214.3L268.1 215.5L267.7 215.8L267.4 217.0L267.6 217.7L267.1 218.4L267.2 219.2L267.6 219.6L268.3 221.1L269.4 222.2L270.7 223.4L271.7 224.4L271.6 225.0L272.8 225.1L273.0 224.9L273.8 225.6L275.1 225.4L276.3 224.7L278.0 224.1L279.0 223.3L280.5 223.5L280.4 223.7L281.9 223.8L283.2 224.3L284.1 225.1L285.1 225.9L286.6 226.0L288.6 224.1L289.8 223.8L289.8 222.8L290.3 220.5L291.9 219.2L293.7 219.2L293.9 218.6L296.1 218.8L298.3 217.4L299.3 216.8L300.7 215.5L301.7 215.6L302.4 216.4L301.9 217.3L301.8 217.9L300.1 218.3L301.1 219.5L301.0 221.0L299.8 222.6L300.8 224.8L302.0 224.6L302.7 222.6L301.8 221.6L301.7 219.5L305.1 218.4L304.7 217.1L305.7 216.2L306.7 218.2L308.7 218.2L310.5 219.8L310.6 220.7L313.1 220.7L316.0 220.4L317.6 221.7L319.7 222.0L321.3 221.1L321.3 220.4L324.8 220.3L328.1 220.2L325.7 221.1L326.7 222.4L328.9 222.6L331.0 223.9L331.5 226.2L332.9 226.1L334.0 226.8L335.8 227.8L337.5 229.6L337.6 231.0L338.7 231.1L340.2 232.4L341.3 233.4L344.6 234.0L344.9 233.5L347.1 233.3L350.1 234.0L351.1 234.3L353.1 235.0L356.0 237.3L356.5 238.5L357.5 238.3L358.1 239.9L359.7 244.7L361.2 245.2L361.3 247.1L359.2 249.4L360.0 250.2L364.9 250.7L365.0 253.4L367.2 251.6L370.6 252.6L375.3 254.3L376.6 255.9L376.2 257.5L379.4 256.6L384.8 258.1L388.9 258.0L393.1 260.3L396.6 263.4L398.7 264.2L401.1 264.3L402.1 265.2L403.1 268.7L403.5 270.4L402.4 275.0L401.0 276.8L397.1 280.7L395.3 283.8L393.3 286.2L392.6 286.3L391.8 288.3L392.0 293.5L391.2 297.8L390.9 299.6L390.0 300.7L389.6 304.4L386.7 308.1L386.3 310.9L384.0 312.1L383.4 313.8L380.3 313.8L376.0 314.9L374.0 316.1L370.9 316.9L367.6 319.1L365.3 321.9L364.9 324.0L365.3 325.5L364.8 328.3L364.2 329.7L362.3 331.2L359.2 336.1L356.7 338.3L354.8 339.6L353.6 342.2L351.7 343.8L350.5 345.5L347.4 347.1L345.3 346.5L343.8 346.8L341.3 345.6L339.4 345.7L337.7 344.2L337.5 345.6L341.0 348.0L340.7 349.9L342.4 351.1L342.3 352.5L339.6 356.1L335.5 357.6L329.9 358.1L326.8 357.9L327.4 359.5L326.9 361.6L327.4 363.0L325.7 364.0L322.9 364.4L320.2 363.3L319.1 364.1L319.5 366.8L321.4 367.7L322.9 366.8L323.7 368.2L321.2 369.1L318.9 370.8L318.5 373.6L317.9 375.1L315.3 375.1L313.1 376.5L312.3 378.6L315.0 380.6L317.7 381.2L316.7 383.7L313.4 385.3L311.6 388.5L309.1 389.6L307.9 390.9L308.8 393.8L310.7 395.4L309.5 395.3L307.1 395.3L305.7 395.9L303.2 396.9L302.8 399.5L301.6 399.6L298.5 398.7L295.3 396.8L291.8 395.2L290.9 393.4L291.7 391.8L290.3 389.9L290.0 385.2L291.2 382.5L294.1 380.4L289.9 379.6L292.5 377.1L293.5 372.5L296.6 373.5L298.0 367.7L296.1 367.0L295.3 370.5L293.5 370.1L294.4 366.1L295.3 361.0L296.6 359.1L295.8 356.3L295.6 353.2L296.8 353.1L298.5 348.6L300.4 344.2L301.6 340.1L300.9 335.9L301.8 333.6L301.4 330.2L303.0 326.8L303.5 321.4L304.4 315.6L305.3 309.4L305.1 304.9L304.5 301.0L301.7 299.4L301.5 298.2L296.0 295.4L291.0 292.4L288.9 290.7L287.7 288.4L288.2 287.6L285.8 284.0L283.1 278.8L280.5 273.3L279.3 272.0L278.4 270.0L276.3 268.2L274.3 267.0L275.2 265.8L273.9 263.2L274.7 261.2L276.9 259.5L278.4 257.4L277.8 256.2L276.8 257.5L275.1 256.2L275.7 255.5L275.2 252.9L276.2 252.5L276.7 250.8L277.7 249.0L277.5 247.9L279.0 247.3L281.0 246.2L280.6 245.3L281.6 245.1L281.5 243.7L282.1 242.7L283.5 242.5L284.7 240.8L285.8 239.3L284.7 238.6L285.3 237.0L284.6 234.5L285.2 233.8L284.8 231.4L283.7 229.9L282.7 229.1L282.1 227.6L282.8 226.9L282.1 226.7L281.6 225.8L280.2 225.0L279.0 225.2L278.4 226.2L277.3 226.9L276.7 226.9L276.4 227.5L277.8 229.0L277.0 229.4L276.6 229.8L275.3 229.9L274.8 228.3L274.5 228.8L273.6 228.6L273.0 227.5L271.9 227.3L271.1 227.0L269.9 227.0L269.9 227.6L269.5 227.2L268.0 226.5L267.5 226.0L267.8 225.5L267.7 224.9L266.9 224.2L265.8 223.6L264.9 223.3L264.7 222.5L264.0 222.0L264.1 222.8L263.6 223.5L262.9 222.7L262.1 222.4L261.7 221.8L261.7 221.0L262.1 220.1L261.3 219.7L261.9 219.2L260.9 218.3L259.7 217.2L259.0 216.3L257.9 215.4L256.5 214.1L256.8 213.7L257.2 214.1L257.5 213.9L257.0 213.1L256.1 212.8L255.8 213.5L254.2 213.4L253.2 213.2L252.1 212.6L250.5 212.4L249.7 211.8L248.3 211.4L246.6 211.3L245.3 210.8L243.8 209.6L240.7 206.6L239.2 205.7L237.0 205.0L235.4 205.2L233.2 206.2L231.8 206.5L229.8 205.8L227.7 205.3L225.1 204.0L223.1 203.6L219.9 202.3L217.6 201.0L216.9 200.2L215.3 200.1L212.5 199.2L211.3 197.9L208.4 196.3L207.0 194.6L206.3 193.2L207.2 193.0L206.9 192.2L207.6 191.5L207.6 190.5L206.7 189.2L206.4 188.1L205.5 186.7L203.0 184.0L200.2 181.8L198.9 180.1L196.5 178.9L196.0 178.3L196.4 176.5L195.0 175.9L193.4 174.5L192.7 172.6L191.2 172.4L189.6 170.9L188.3 169.6L188.1 168.7L186.6 166.6L185.7 164.5L185.7 163.4L183.7 162.3L182.8 162.4L181.2 161.7L180.7 162.8L181.2 164.1L181.5 166.2L182.4 167.4L184.5 169.3L184.9 169.9L185.4 170.1L185.7 171.1L186.2 171.0L186.8 172.8L187.6 173.5L188.2 174.5L190.0 175.9L190.9 178.5L191.7 179.7L192.5 181.0L192.6 182.5L194.0 182.6L195.1 183.9L196.1 185.1L196.0 185.6L194.8 186.6L194.4 186.6L193.6 184.9L191.8 183.3L189.8 182.0L188.4 181.3L188.5 179.2L188.1 177.7L186.7 176.9L184.8 175.6L184.5 176.0L183.8 175.3L182.0 174.6L180.4 173.0L180.6 172.8L181.7 172.9L182.8 171.9L182.9 170.6L180.7 168.7L179.1 167.9L178.1 166.2L177.1 164.3L175.8 162.1L174.6 159.6L174.2 158.2L172.4 156.6L171.1 156.3L170.8 155.5L169.2 155.3L168.2 154.6L165.6 154.3L164.9 153.9L164.6 152.3L161.9 149.6L159.6 145.7L159.7 145.0L158.5 144.1L156.3 141.8L155.9 139.5L154.4 138.0L155.1 135.7L155.0 133.3L154.1 131.2L155.2 128.6L155.8 123.5L155.3 119.8L154.5 117.4L153.6 116.2L154.0 115.6L158.0 116.6L159.5 119.2L160.2 118.4L159.7 116.2L158.8 113.9L158.4 113.9L153.0 111.2L151.0 110.0L146.0 108.8L144.5 106.3L144.9 104.6L141.3 103.5L140.8 101.2L137.5 99.2L137.4 97.8L135.9 96.7L133.4 95.8L132.6 93.4L129.1 91.2L127.6 88.5L124.9 88.4L120.5 88.3L117.2 87.5L111.5 84.6L108.8 84.1L104.0 83.1L100.1 83.3L94.7 82.1L91.3 80.9L88.3 81.5L88.8 83.4L87.3 83.6L84.1 84.2L81.6 85.1L78.6 85.7L78.2 84.0L79.4 81.3L82.4 80.5L81.6 79.8L78.1 81.3L76.2 83.2L72.2 85.1L74.2 86.5L71.6 88.5L68.6 89.6L65.8 90.5L65.1 91.7L60.8 93.2L59.9 94.5L56.7 95.6L54.8 95.4L52.2 96.2L49.3 97.2L47.0 98.1L42.3 98.9L41.8 98.4L44.9 97.1L47.6 96.3L50.5 94.7L54.0 94.4L55.4 93.3L59.2 91.6L59.8 91.1L61.9 90.1L62.4 88.0L63.8 86.3L60.6 87.2L59.7 86.7L58.2 87.7L56.4 86.3L55.6 87.3L54.6 85.9L51.8 87.0L50.1 87.0L49.8 85.4L50.3 84.4L48.6 83.4L44.9 83.9L42.6 82.6L40.7 81.9L40.7 80.4L38.6 79.2L39.6 77.6L41.9 76.0L42.9 74.6L45.1 74.4L47.0 74.8L49.3 73.5L51.3 73.7L53.4 72.9L52.9 71.6L51.3 71.1L53.4 70.0L51.7 70.1L48.7 70.7L47.9 71.3L45.7 70.7L41.8 71.0L37.7 70.3L36.5 69.2L33.0 67.6L36.9 66.4L43.1 65.1L45.4 65.1L45.0 66.5L50.9 66.3L48.6 64.6L45.2 63.6L43.2 62.2L40.6 61.0L36.8 60.1L38.3 58.7L43.2 58.6L46.8 57.3L47.4 55.9L50.3 54.6L53.0 54.3L58.2 53.1L60.8 53.3L65.1 51.8L69.3 52.4L71.3 53.6L72.5 53.1L77.2 53.2L77.0 53.9L81.3 54.4L84.1 54.1L90.0 55.0L95.3 55.2L97.4 55.6L101.1 55.1L105.4 56.0L108.4 56.4L113.6 57.0L117.9 58.4L120.8 58.6L123.3 57.5L126.6 56.6L130.8 56.9L134.9 55.7L139.5 55.0L141.4 56.2L143.4 55.5L144.1 54.2L146.0 54.5L150.7 57.0L154.4 55.1L154.8 57.2L158.2 56.8L159.2 56.0L162.6 56.1L166.8 57.3L173.3 58.3L177.1 58.8L179.9 58.6L183.6 60.0L179.7 61.4L184.7 62.0L192.2 61.6L194.6 61.2L197.6 62.8L200.6 61.4L197.7 60.2L199.5 59.3L202.9 59.2L205.1 58.9L207.4 59.6L210.2 61.1L213.3 60.8L218.2 62.1L222.5 61.7L226.5 61.7L226.2 60.0L228.7 59.5L233.0 60.4L233.0 63.1L234.8 60.9L237.0 60.9L238.2 58.1L235.3 56.4L232.0 55.3L232.2 52.2L235.5 50.2L239.2 50.7L242.0 51.9L245.8 55.0L243.3 56.4L248.5 57.0ZM182.9 46.9L181.5 48.2L187.7 47.3L191.5 48.7L194.7 47.3L197.2 48.2L199.5 51.0L200.9 49.8L198.9 47.0L201.3 46.6L204.1 47.0L207.2 48.1L209.0 50.8L209.8 52.8L214.5 54.2L219.5 55.5L219.2 56.7L214.6 56.9L216.4 58.0L215.5 59.0L210.4 58.6L205.7 57.8L202.4 58.0L197.2 58.9L189.0 59.4L185.2 59.6L183.7 58.3L179.9 57.6L177.5 57.9L174.1 55.7L175.9 55.4L180.2 54.9L184.1 55.0L187.7 54.5L182.4 53.9L176.4 54.1L172.5 54.1L171.0 53.0L177.5 51.9L173.2 52.0L168.3 51.2L170.7 49.1L172.6 48.0L180.0 46.3L182.9 46.9ZM209.7 46.1L207.3 47.9L202.9 45.9L203.9 45.6L207.6 45.4L209.7 46.1ZM287.9 46.9L288.2 47.7L285.2 47.6L282.2 47.6L279.2 47.9L278.4 47.8L275.3 46.3L275.5 45.3L276.8 45.1L283.2 45.4L287.9 46.9ZM259.5 46.8L261.7 48.5L264.3 46.3L271.3 45.1L276.1 48.0L275.7 49.8L281.2 49.0L283.8 47.9L290.0 49.3L293.8 50.6L294.2 51.9L299.3 51.2L302.2 53.0L308.9 54.1L311.3 55.2L314.0 57.8L308.9 59.1L315.4 60.9L319.8 61.5L323.8 64.1L328.2 64.3L327.3 66.2L322.4 69.4L319.0 68.3L314.7 65.6L311.1 65.9L310.7 67.5L313.6 69.1L317.4 70.4L318.6 71.2L320.4 73.9L319.4 75.9L315.9 75.2L308.9 72.9L312.9 75.3L315.8 77.0L316.2 78.0L308.7 76.9L302.7 75.2L299.3 73.9L300.3 73.1L296.2 71.7L292.1 70.3L292.2 71.1L284.1 71.6L281.8 70.6L283.6 68.6L288.8 68.5L294.6 68.2L293.6 67.2L294.6 65.8L298.2 63.1L297.4 61.9L296.4 60.9L292.1 59.6L286.5 58.6L288.3 57.9L285.3 56.2L282.9 56.0L280.7 55.1L279.2 55.9L274.2 56.3L264.0 55.6L258.2 54.8L253.7 54.4L251.4 53.4L254.3 52.2L250.3 52.2L249.4 49.3L251.6 46.9L254.4 45.7L261.6 45.0L259.5 46.8ZM221.2 44.9L224.5 45.5L229.5 45.1L230.2 45.9L227.6 47.2L231.8 48.4L231.3 50.9L226.8 52.0L224.1 51.8L222.2 50.7L215.3 48.6L215.3 47.7L221.0 48.0L217.9 46.2L221.2 44.9ZM898.9 46.6L894.7 46.7L889.0 46.3L888.5 46.2L891.1 45.1L894.6 44.8L898.6 45.9L898.9 46.6ZM241.1 47.9L238.1 49.9L235.0 49.8L233.2 47.4L233.3 46.0L234.7 44.8L237.5 44.1L243.3 44.2L248.6 44.8L244.4 47.3L241.1 47.9ZM165.4 51.7L158.1 53.1L156.6 51.8L150.2 50.4L151.1 49.5L153.3 47.2L155.7 45.3L153.0 43.6L162.4 43.2L166.4 43.8L173.5 43.9L176.2 44.7L179.1 45.9L175.6 46.6L168.8 48.6L165.4 50.5L165.4 51.7ZM918.7 41.4L915.5 42.5L911.0 42.3L905.9 41.2L906.6 40.3L911.7 40.7L918.7 41.4ZM240.0 41.7L238.5 42.8L234.4 42.6L231.1 41.9L232.5 40.6L236.5 39.9L239.0 40.8L240.0 41.7ZM903.0 40.1L900.8 42.2L890.6 42.1L886.0 42.7L880.5 40.9L882.0 39.0L885.6 38.5L893.0 38.6L903.0 40.1ZM226.4 36.9L228.5 38.2L228.6 39.6L227.3 41.7L222.8 42.0L219.8 41.5L219.8 39.9L215.3 40.1L215.1 38.0L218.1 38.0L222.3 37.1L226.2 37.3L226.4 36.9ZM199.4 38.3L200.5 39.3L203.0 38.9L205.9 39.0L206.4 40.3L204.7 41.7L195.3 42.1L188.3 43.3L184.0 43.3L183.7 42.4L189.5 41.2L176.9 41.5L173.0 41.0L176.8 38.3L179.4 37.6L187.2 38.5L192.2 40.1L197.0 40.4L193.1 37.7L195.6 36.7L198.5 37.0L199.4 38.3ZM659.8 53.6L658.2 53.8L649.1 53.4L648.4 52.2L643.3 51.5L642.9 50.0L645.8 49.4L645.7 47.8L651.2 45.5L648.6 45.1L655.3 42.7L654.5 41.4L660.7 40.0L669.9 38.2L679.2 37.7L683.9 36.6L689.3 36.3L691.3 37.4L689.4 38.2L679.5 39.6L671.1 40.9L662.4 43.6L658.3 46.3L653.9 49.0L654.5 51.3L659.8 53.6ZM237.0 35.8L240.1 36.7L245.5 36.7L247.9 37.6L247.3 38.7L250.5 39.3L252.3 40.0L256.0 40.1L260.1 40.3L264.5 39.7L270.1 39.5L274.6 39.7L277.6 40.7L278.2 41.9L276.5 42.6L272.4 43.2L268.8 42.9L260.8 43.3L255.1 43.4L250.7 43.0L243.3 42.1L242.3 40.6L242.0 39.2L239.2 38.0L233.4 37.7L230.2 36.8L231.3 35.7L237.0 35.8ZM177.2 34.3L176.8 36.5L174.7 37.4L172.1 37.6L166.9 38.7L162.5 39.2L158.7 38.6L158.7 38.6L163.5 36.5L169.2 34.7L173.4 34.7L177.2 34.3ZM797.1 36.2L797.9 37.6L800.4 36.9L808.5 36.9L814.8 38.3L817.0 39.3L816.3 40.8L813.3 41.6L806.0 43.1L803.9 43.9L807.3 44.3L811.4 45.0L813.9 44.5L815.4 46.3L816.6 45.6L821.0 45.1L829.9 45.6L830.6 46.9L842.2 47.3L842.4 45.2L848.3 45.7L852.7 45.7L857.2 47.1L858.5 48.9L856.8 50.1L860.3 52.2L864.7 53.4L867.4 50.5L871.8 51.7L876.6 51.0L881.9 51.8L884.0 51.0L888.5 51.4L886.5 48.8L890.2 47.6L915.3 49.4L917.6 51.1L924.9 53.2L936.1 52.7L941.7 53.1L944.0 54.3L943.6 56.3L947.1 57.1L950.8 56.5L955.7 56.5L960.9 57.0L966.2 56.7L971.0 59.2L974.5 58.3L972.2 56.5L973.5 55.3L982.3 56.1L988.1 55.9L996.1 57.2L1000.0 58.4L1000.0 69.5L1000.0 69.5L996.4 70.7L992.8 70.5L995.3 72.0L997.0 74.3L998.3 75.0L998.6 76.2L997.9 76.9L992.7 76.3L984.9 78.4L982.4 78.7L978.2 80.7L974.2 82.4L973.1 83.7L969.2 81.7L961.9 83.9L960.7 82.9L958.0 84.1L954.3 83.7L953.4 85.5L950.0 88.2L950.1 89.3L953.3 90.0L952.9 94.0L950.4 94.1L949.2 96.4L950.3 97.6L945.5 99.0L944.5 102.2L940.4 102.9L939.5 105.7L935.5 108.3L934.5 106.4L933.3 102.3L931.8 96.2L933.1 92.3L935.4 90.7L935.6 89.4L939.9 88.7L944.9 85.2L949.6 82.4L954.6 80.2L956.9 76.2L953.5 76.5L951.8 78.8L944.8 81.8L942.5 78.4L935.3 79.3L928.4 84.0L930.7 85.7L924.5 86.4L920.2 86.7L920.4 84.7L916.1 84.3L912.6 85.7L904.1 85.2L895.0 86.0L886.0 91.4L875.4 98.0L879.7 98.3L881.1 100.1L883.8 100.7L885.6 99.3L888.6 99.5L892.6 102.5L892.7 104.9L890.5 107.7L890.3 111.0L889.1 115.4L884.9 119.4L883.9 121.4L880.2 124.6L876.4 127.8L874.6 129.4L870.9 131.1L869.2 131.1L867.4 129.8L863.7 131.8L863.3 132.7L862.2 132.6L861.0 133.5L860.2 134.4L860.3 136.4L858.9 137.1L858.4 137.5L857.3 138.4L855.5 138.8L854.3 139.6L854.2 140.8L853.8 141.1L855.0 141.5L856.5 142.7L858.9 146.0L859.6 147.8L859.6 151.0L858.6 152.5L856.1 153.1L853.9 154.2L851.3 154.5L851.0 153.0L851.6 150.9L850.3 148.0L852.4 147.5L850.5 145.1L849.1 144.6L848.8 145.1L848.0 145.4L847.9 144.8L847.2 144.6L846.4 144.1L847.2 142.9L847.8 142.6L847.6 142.1L848.3 140.6L848.1 140.1L846.5 139.8L845.2 139.1L841.3 139.9L839.3 141.2L836.3 142.0L837.7 140.7L837.2 139.6L839.4 137.7L837.9 136.3L835.5 137.2L832.3 139.2L830.6 141.0L827.9 141.1L826.5 142.4L827.9 144.3L830.2 144.7L830.3 146.0L832.5 146.8L835.6 144.8L838.1 145.9L839.9 146.0L840.3 147.4L836.4 148.2L835.1 149.7L832.4 151.1L831.0 153.0L834.0 154.6L835.1 157.3L836.7 159.8L838.6 162.0L838.6 164.0L836.8 164.8L837.5 166.3L839.1 167.1L838.7 169.4L838.0 171.6L836.5 171.8L834.4 174.9L832.2 178.5L829.6 181.8L825.8 184.4L821.9 186.7L818.8 187.0L817.1 188.3L816.1 187.4L814.6 188.7L810.7 190.1L807.7 190.6L806.8 193.5L805.2 193.7L804.5 191.6L805.2 190.6L801.5 189.7L800.1 190.1L796.4 192.5L794.1 195.1L793.5 197.1L795.6 200.0L798.2 203.6L800.7 205.3L802.4 207.6L803.7 212.7L803.3 217.6L801.0 219.4L797.8 221.2L795.6 223.5L792.1 226.1L791.1 224.3L791.9 222.4L789.8 220.9L787.5 220.5L786.4 219.0L785.0 216.1L782.5 214.9L780.1 214.9L780.5 212.7L778.0 212.8L777.8 215.8L776.3 219.9L775.4 222.3L775.6 224.3L777.4 224.4L778.6 227.0L779.1 229.4L780.6 231.0L782.3 231.3L783.7 232.7L784.4 233.0L786.0 234.7L787.2 236.5L787.3 238.4L787.0 239.6L787.3 240.6L787.5 242.2L788.5 243.0L789.6 245.5L789.5 246.4L787.6 246.6L784.9 244.5L781.6 242.3L781.3 240.9L779.7 239.1L779.3 236.8L778.3 235.2L778.6 233.2L778.0 232.0L776.9 231.0L776.4 229.6L775.0 228.0L773.6 226.7L773.2 228.3L772.6 226.8L772.9 225.1L773.8 222.4L773.5 220.3L774.3 218.2L773.4 216.6L773.6 213.5L772.5 212.1L771.6 208.8L771.1 205.3L769.9 203.0L768.1 204.4L764.9 206.3L763.4 206.1L761.6 205.4L762.6 202.0L762.0 199.4L759.8 196.2L760.2 195.2L758.6 194.8L756.6 192.6L755.8 191.1L755.6 189.7L755.1 188.4L753.9 186.8L751.4 186.7L751.6 187.8L750.8 189.3L749.6 188.8L749.2 189.3L748.4 189.0L747.3 188.7L746.9 189.7L745.0 189.7L741.6 190.3L741.8 192.4L740.3 194.0L736.3 195.9L733.2 199.2L731.1 200.9L728.3 202.7L728.3 204.0L726.9 204.7L724.4 205.7L723.1 205.8L722.3 208.0L722.9 211.6L723.0 213.9L721.8 216.5L721.8 221.2L720.4 221.4L719.1 223.5L720.0 224.4L717.4 225.2L716.5 227.1L715.4 227.9L712.8 225.3L711.5 221.4L710.4 218.6L709.4 217.3L708.0 214.6L707.3 211.1L706.8 209.4L704.3 205.6L703.1 200.2L702.3 196.6L702.3 193.3L701.8 190.7L697.7 192.3L695.8 192.0L692.1 188.6L693.5 187.6L692.6 186.5L689.4 184.2L687.3 183.5L686.5 181.5L684.4 179.4L679.3 179.9L674.7 179.9L670.8 180.3L665.6 179.5L662.6 178.9L659.4 178.5L658.3 175.1L656.9 174.6L654.8 175.1L652.0 176.4L648.6 175.5L645.8 173.4L643.1 172.6L641.3 170.0L639.2 166.3L637.7 166.7L635.9 165.8L634.9 166.9L633.3 166.7L633.8 168.0L633.6 168.6L634.5 170.7L635.6 173.1L636.9 173.7L637.4 174.7L639.3 175.9L639.5 177.0L639.2 177.9L639.6 178.9L640.4 179.6L640.7 180.6L641.1 181.2L641.0 179.2L641.7 177.8L642.5 177.5L643.3 178.3L643.4 180.0L642.7 181.6L643.3 182.7L643.8 182.5L643.9 183.3L646.0 182.8L648.3 182.9L650.0 183.0L651.9 181.1L654.0 179.3L655.8 177.6L656.6 176.7L656.9 176.9L656.6 178.1L656.3 178.6L656.7 180.8L657.9 182.7L659.5 183.7L661.5 184.0L663.1 184.5L664.4 186.1L665.1 187.1L666.1 187.4L666.1 188.0L665.1 189.7L664.7 190.5L663.5 191.3L662.5 193.3L661.2 193.1L660.6 193.8L660.2 195.2L660.5 197.0L660.3 197.4L659.0 197.4L657.2 198.4L657.0 199.8L656.3 200.3L654.6 200.3L653.5 201.0L653.5 202.1L652.2 202.9L650.7 202.7L648.8 203.6L647.5 203.7L645.5 204.5L645.0 205.7L644.9 206.7L642.1 207.8L637.7 209.1L635.2 211.1L634.0 211.3L633.2 211.1L631.5 212.2L629.8 212.8L627.4 212.9L626.7 213.1L626.1 213.8L625.4 214.0L625.0 214.7L623.6 214.7L622.7 215.0L620.8 214.9L620.1 213.3L620.1 211.8L619.7 210.9L619.1 208.9L618.3 207.7L618.9 207.6L618.6 206.3L619.0 205.8L618.8 204.6L618.5 203.4L617.6 202.6L617.4 201.5L616.0 200.5L614.5 198.1L613.7 195.9L611.8 194.0L610.6 193.5L608.7 190.9L608.4 188.9L608.5 187.3L606.9 184.2L605.6 183.1L604.1 182.5L603.2 180.9L603.4 180.3L602.6 178.9L601.8 178.3L600.7 176.2L599.0 174.0L597.6 172.0L596.2 172.1L596.6 170.5L596.8 169.6L597.1 168.5L597.0 168.1L596.2 169.2L595.6 171.3L594.9 172.7L594.2 173.2L593.3 172.3L592.0 171.1L590.1 167.1L589.8 167.3L590.9 170.3L592.6 173.1L594.7 177.4L595.8 178.9L596.7 180.5L599.1 183.5L598.6 184.0L598.7 185.8L601.9 188.3L602.4 188.9L603.3 191.6L602.7 192.1L603.1 195.0L604.1 198.3L605.2 199.0L606.7 200.0L608.3 203.2L609.1 205.8L610.6 207.1L614.4 209.7L615.9 211.3L617.4 212.9L618.3 213.9L619.7 214.7L620.3 215.6L620.2 216.7L618.7 217.4L619.8 218.2L620.8 218.7L621.3 219.8L622.5 221.0L623.9 221.0L626.5 220.3L629.6 220.0L632.0 219.1L633.4 218.9L634.4 218.4L636.0 218.3L636.9 218.2L638.1 217.8L639.6 217.6L640.9 216.6L642.0 216.6L642.0 217.4L641.8 219.0L641.8 220.4L641.2 221.4L640.4 224.4L639.1 227.6L637.4 231.1L635.0 235.2L632.6 238.3L629.3 242.1L626.6 244.3L622.4 247.1L619.8 249.2L616.8 252.6L616.1 254.0L615.5 254.7L613.6 255.8L612.9 256.9L611.8 257.1L611.4 259.1L610.6 260.2L610.0 262.1L608.9 263.0L607.6 266.4L607.8 268.0L609.6 269.0L609.6 269.7L608.9 271.4L609.0 272.2L608.9 273.6L609.8 275.3L611.0 278.1L612.0 278.7L612.4 279.9L612.3 282.7L612.7 285.1L612.8 289.4L613.3 290.8L612.4 292.8L611.4 294.7L609.6 296.4L607.1 297.5L603.9 298.9L600.8 301.8L599.7 302.3L597.8 304.3L596.6 305.0L596.4 306.9L597.7 309.0L598.3 310.7L598.3 311.5L598.8 311.4L598.7 314.1L598.3 315.4L598.9 315.9L598.5 317.0L597.3 318.0L595.0 318.9L591.7 320.4L590.5 321.5L590.7 322.6L591.4 322.8L591.2 324.3L590.5 326.3L590.2 328.6L589.5 329.9L587.6 331.3L587.0 331.7L585.8 333.1L585.1 334.5L583.5 336.5L580.3 339.4L578.4 341.0L576.3 342.3L573.4 343.4L572.0 343.5L571.6 344.3L569.9 343.9L568.5 344.4L565.5 343.9L563.9 344.2L562.7 344.1L559.8 345.2L557.5 345.6L555.8 346.7L554.5 346.7L553.3 345.7L552.4 345.7L551.2 344.4L551.0 344.8L550.7 344.1L550.7 342.4L549.8 340.6L550.7 340.1L550.6 337.9L548.8 335.3L547.4 333.0L547.4 333.0L545.4 329.4L543.3 327.3L542.3 325.3L541.6 322.5L541.0 320.5L540.0 316.3L540.0 312.9L539.6 311.4L538.5 310.3L537.1 308.0L535.6 304.6L535.0 302.9L532.8 300.2L532.6 298.1L532.3 296.3L532.7 293.9L533.7 291.3L533.8 290.1L534.7 287.6L535.4 286.5L537.0 284.7L537.9 283.4L538.2 281.4L538.0 279.8L537.2 278.8L536.4 277.1L535.8 275.5L535.9 274.9L536.8 273.8L535.9 271.1L535.4 269.2L534.0 267.5L534.2 266.9L533.8 266.1L533.1 264.0L530.8 261.1L528.0 258.2L526.1 256.0L524.4 253.1L524.5 252.2L525.1 251.3L525.8 249.3L526.4 247.2L525.8 246.8L526.8 243.7L527.2 241.5L526.1 239.6L524.9 239.2L524.3 237.9L523.6 237.5L523.6 236.7L520.7 237.7L519.7 237.6L518.6 238.2L516.4 238.2L514.9 236.4L514.0 234.4L512.0 232.6L509.9 232.6L507.5 232.6L505.2 232.9L502.9 233.5L498.6 235.2L497.0 236.1L494.5 236.9L492.1 236.1L490.8 236.2L488.9 235.6L487.1 235.6L483.8 236.1L481.9 236.9L479.1 237.9L478.6 237.9L477.8 237.9L475.0 236.6L472.5 234.5L470.1 232.9L468.2 231.2L467.5 230.9L465.5 229.8L464.0 228.3L463.5 227.3L463.2 225.3L462.0 223.6L460.9 222.5L460.2 222.2L459.5 221.6L459.2 220.4L458.8 219.8L458.0 219.3L456.5 218.2L455.3 218.0L454.7 217.2L454.7 216.8L453.9 216.2L453.7 215.6L453.2 213.5L453.6 212.2L452.4 210.1L451.0 209.1L452.3 208.6L453.6 206.6L454.3 205.2L454.0 203.7L454.8 202.3L455.1 199.7L454.8 197.0L454.5 195.6L454.8 194.2L454.1 192.9L452.6 191.7L452.7 190.5L452.9 189.2L453.9 188.4L454.8 187.0L454.6 186.1L455.6 184.1L457.1 182.3L458.1 181.9L458.8 180.3L458.9 178.8L459.9 177.1L461.7 176.1L463.5 173.2L464.9 172.1L467.5 171.8L469.7 169.9L471.1 169.2L473.4 166.9L472.7 163.4L473.8 161.0L474.2 159.5L476.0 157.7L478.7 156.4L480.8 155.2L482.7 152.4L483.5 150.7L485.6 150.7L487.2 151.9L489.9 151.7L492.8 152.3L494.0 152.3L496.6 150.8L499.6 150.3L501.4 149.2L504.1 148.3L508.8 147.8L513.4 147.6L514.8 148.0L517.4 146.9L520.4 146.9L521.5 147.5L523.4 147.4L526.4 146.2L528.4 146.6L528.3 148.0L530.6 147.0L530.8 147.5L529.4 148.9L529.4 150.1L530.4 150.8L530.0 153.2L528.2 154.6L528.7 156.2L530.2 156.2L530.9 157.5L531.9 158.0L535.2 158.9L536.3 158.7L538.7 159.1L542.3 160.4L543.6 162.8L546.1 163.4L550.1 164.5L553.0 165.9L554.4 165.2L555.7 163.9L555.1 161.8L555.9 160.4L557.9 159.1L559.8 158.8L563.6 159.3L564.5 160.6L565.6 160.6L566.5 161.1L569.2 161.4L569.9 162.3L573.6 162.3L576.3 163.0L579.0 163.8L580.3 164.2L582.5 163.4L583.6 162.6L586.0 162.3L588.0 162.7L588.8 164.1L589.4 163.2L591.6 163.8L593.8 164.0L595.2 163.3L596.0 162.4L595.8 162.2L596.5 160.9L597.1 158.8L597.5 158.1L597.6 158.1L598.6 155.8L599.9 153.9L600.0 153.8L599.7 151.6L600.4 150.5L599.4 149.2L600.4 148.2L598.8 148.4L596.4 147.8L594.5 149.4L590.3 149.7L588.1 148.2L585.1 148.1L584.4 149.3L582.5 149.6L579.8 148.1L576.8 148.2L575.1 145.4L573.1 143.9L574.5 141.7L572.7 140.4L575.8 137.7L580.1 137.6L581.2 135.5L586.5 135.9L589.9 134.1L593.1 133.3L597.7 133.2L602.5 135.2L606.5 136.3L609.8 135.8L612.1 136.1L615.4 134.6L615.8 133.4L615.1 131.5L613.5 130.5L612.0 130.2L611.0 129.3L607.4 127.0L604.3 126.0L601.9 124.3L603.9 123.9L606.2 121.6L604.6 120.5L608.7 119.3L608.7 118.7L606.2 119.2L604.0 119.4L602.1 120.3L599.5 120.4L597.1 121.5L597.3 123.2L598.6 123.9L601.5 123.7L600.9 124.7L597.9 125.2L594.1 126.8L592.6 126.2L593.2 124.9L590.2 124.1L590.6 123.6L593.3 122.6L592.5 122.0L588.2 121.3L588.0 120.3L585.4 120.6L584.4 122.1L582.2 124.2L582.3 124.9L580.9 125.5L580.1 125.2L579.3 128.6L577.9 129.7L576.9 131.7L577.8 133.3L578.1 134.4L580.5 135.3L580.0 136.0L576.7 136.1L575.5 137.0L573.2 138.5L572.3 137.2L572.4 136.6L570.7 136.5L569.2 136.3L565.9 137.0L567.8 138.5L566.4 139.0L564.8 139.0L563.4 137.6L562.9 138.2L563.5 139.8L564.9 141.1L563.8 141.7L565.4 143.0L566.7 143.8L566.8 145.4L564.2 144.7L565.0 146.1L563.3 146.4L564.3 148.8L562.5 148.9L560.2 147.7L559.2 145.4L558.7 143.6L557.6 142.3L556.2 140.7L556.0 139.9L555.5 139.7L555.4 139.1L553.9 138.2L553.7 136.9L553.9 135.0L554.3 134.1L553.8 133.7L553.2 133.5L552.5 132.6L551.3 132.0L548.6 131.0L547.0 130.0L544.5 129.1L542.2 127.1L542.7 126.9L541.4 125.7L541.4 124.8L539.6 124.4L538.8 125.5L537.9 124.6L538.0 123.7L538.1 123.6L538.7 123.4L536.5 123.0L534.2 123.9L534.4 125.3L534.1 126.1L535.0 127.5L537.6 128.9L539.0 131.2L542.1 133.5L544.2 133.4L544.9 134.1L544.1 134.6L546.6 135.6L548.7 136.5L551.0 137.9L551.3 138.4L550.8 139.4L549.3 138.1L546.9 137.7L545.7 139.5L547.7 140.5L547.4 141.9L546.2 142.1L544.7 144.5L543.6 144.7L543.6 143.8L544.1 142.4L544.7 141.8L543.7 140.2L542.8 138.8L541.7 138.4L540.8 137.2L539.1 136.7L537.9 135.6L535.8 135.4L533.6 134.2L531.1 132.3L529.2 130.7L528.3 128.0L527.0 127.7L524.7 126.8L523.4 127.1L521.8 128.4L520.7 128.6L518.1 130.2L512.7 129.4L508.6 130.3L508.3 132.0L508.4 133.6L505.8 135.5L502.3 136.1L502.0 137.0L500.3 138.5L499.2 140.8L500.3 142.4L498.7 143.6L498.1 145.4L496.0 146.0L494.0 148.1L490.5 148.2L487.9 148.1L486.1 149.1L485.1 150.1L483.7 149.9L482.7 149.0L481.9 147.4L479.3 147.0L478.2 147.7L476.7 147.3L475.3 147.6L475.7 145.4L475.4 143.7L474.2 143.4L473.5 142.4L473.8 140.6L474.9 139.6L475.1 138.4L475.6 136.8L475.6 135.6L475.0 134.6L474.9 133.7L475.0 131.7L473.9 130.5L477.8 128.5L481.2 129.0L485.0 129.0L487.9 129.4L490.2 129.3L494.7 129.4L496.2 127.7L496.7 122.2L493.8 119.3L491.8 117.9L487.5 116.8L487.2 114.8L490.8 114.2L495.5 114.9L494.6 111.7L497.3 112.9L503.7 110.8L504.6 108.5L507.0 107.9L509.2 107.4L510.6 106.6L513.1 102.5L516.9 101.4L519.2 101.4L519.7 100.9L522.0 100.7L522.6 101.3L524.4 99.9L523.8 98.9L523.7 97.3L522.6 95.8L522.5 92.9L522.9 92.2L523.7 91.4L526.2 91.2L527.2 90.4L529.4 89.6L529.3 91.1L528.5 92.0L528.8 92.7L530.3 93.2L529.6 94.2L528.8 93.9L526.8 95.9L527.6 97.3L527.6 98.3L530.4 99.0L530.4 100.0L533.2 99.5L534.8 98.7L537.9 99.8L539.2 100.7L541.1 99.9L545.5 98.6L549.0 97.6L551.7 98.1L551.9 98.8L554.6 98.8L555.2 97.6L559.1 96.7L558.5 94.4L558.6 92.3L559.9 90.5L562.6 89.6L564.8 91.6L567.0 91.6L567.5 89.5L567.9 87.8L566.8 88.2L565.1 87.2L564.8 85.6L568.3 84.8L571.8 84.4L574.9 84.9L577.7 84.8L580.9 83.3L578.0 81.9L572.9 82.2L568.0 83.2L563.5 83.8L561.9 82.2L559.2 81.3L559.8 78.6L558.5 76.1L559.8 74.5L562.3 72.7L568.7 69.7L570.6 69.1L570.3 68.0L566.4 66.6L561.6 67.4L558.9 69.4L559.4 71.1L554.9 73.3L549.6 75.7L547.6 79.6L549.5 81.6L552.2 83.1L549.6 86.2L546.7 86.9L545.7 91.6L544.1 94.2L540.7 93.9L539.2 96.1L536.0 96.2L535.1 93.6L532.7 90.4L530.6 86.5L528.8 84.8L523.3 88.0L519.6 88.7L515.7 87.3L514.7 84.3L513.9 77.9L516.4 76.1L523.8 73.7L529.2 70.9L534.3 67.0L541.0 61.6L545.7 59.5L553.3 56.1L559.4 54.8L564.0 55.0L568.2 52.7L573.3 52.8L578.2 52.3L586.9 54.3L583.3 55.0L586.4 56.8L589.3 55.8L593.8 57.5L601.4 58.2L611.9 61.3L614.1 62.6L614.2 64.5L611.2 65.9L606.6 66.7L594.2 64.6L592.2 64.9L596.7 66.9L597.1 71.1L600.6 71.9L602.8 72.6L603.2 71.3L601.4 70.1L603.3 69.0L610.0 70.8L612.3 70.1L610.5 68.1L616.9 65.3L619.5 65.5L622.1 66.5L623.7 64.6L621.4 62.9L622.7 61.2L620.7 59.5L628.5 60.4L630.1 62.0L626.5 62.3L626.6 63.9L628.7 64.8L633.0 64.2L633.7 62.4L639.5 61.1L649.2 58.7L651.3 58.9L648.6 60.6L652.0 60.8L654.0 59.9L659.2 59.8L663.3 58.7L666.5 60.3L669.7 58.5L666.8 56.9L668.2 56.0L676.4 56.8L680.2 57.7L690.3 60.9L692.2 59.4L689.3 57.9L689.3 57.3L685.9 57.1L686.8 55.8L685.3 53.6L685.3 52.7L690.4 50.2L692.2 47.7L694.3 47.1L701.6 47.8L702.2 49.4L699.6 51.6L701.3 52.5L702.2 54.5L701.6 58.3L704.6 60.0L703.4 61.8L698.0 65.8L701.2 66.2L702.3 65.2L705.3 64.5L706.1 63.1L708.5 61.8L706.9 60.2L708.2 58.4L705.1 58.1L704.4 56.6L706.7 53.8L703.1 51.5L708.0 49.7L707.4 47.7L708.8 47.6L710.2 49.2L709.1 51.8L712.1 52.4L710.8 50.3L715.5 49.3L721.3 49.1L726.4 50.7L723.9 48.4L723.6 45.4L728.5 44.9L735.2 45.0L741.2 44.6L738.9 43.2L742.1 41.3L745.3 41.3L750.7 39.9L758.1 39.5L759.0 38.8L766.3 38.5L768.6 39.1L774.8 37.6L779.9 37.7L780.7 36.5L783.3 35.3L789.9 34.2L794.6 35.1L790.8 35.8L797.1 36.2ZM636.4 135.3L637.8 137.3L639.1 137.4L640.0 138.2L637.7 138.4L637.2 140.6L636.7 141.5L635.7 142.2L635.8 143.6L636.7 145.6L639.3 146.2L641.2 147.6L645.2 148.1L649.5 147.3L649.8 146.7L649.3 144.7L649.7 141.8L647.5 140.9L648.2 139.0L646.4 138.8L647.0 136.5L649.6 137.1L652.0 136.2L650.0 134.6L649.2 133.0L647.0 133.7L646.7 135.7L645.8 133.9L645.7 133.3L646.4 132.1L645.8 131.1L642.6 130.2L641.4 127.7L639.8 127.0L639.7 126.1L642.4 126.3L642.5 124.3L644.9 123.9L647.3 124.3L647.8 121.6L647.3 119.9L644.6 120.0L642.2 119.3L639.0 120.5L636.4 121.1L635.1 122.8L632.4 123.2L629.7 126.1L632.2 128.7L631.9 130.6L635.0 133.9L636.4 135.3ZM239.3 34.7L238.1 34.7L232.9 34.6L232.1 33.8L237.7 33.8L239.7 34.3L239.3 34.7ZM193.9 34.2L188.7 35.0L184.6 34.1L186.9 33.2L190.9 32.9L194.8 33.3L193.9 34.2ZM568.7 33.7L562.5 34.9L557.6 34.2L559.5 33.5L557.8 32.6L563.6 32.1L564.7 33.1L568.7 33.7ZM195.4 31.7L192.0 32.2L187.4 32.2L187.4 31.8L190.3 31.0L191.8 31.1L195.4 31.7ZM233.8 33.2L229.7 33.7L227.4 33.1L226.2 32.1L226.0 30.9L229.6 31.0L231.2 31.2L234.6 32.2L233.8 33.2ZM222.1 32.4L223.1 33.6L218.6 33.3L214.0 32.4L207.8 32.3L210.5 31.5L207.2 30.8L207.0 29.7L212.4 30.1L219.9 31.1L222.1 32.4ZM791.9 32.5L776.2 33.6L781.3 29.9L783.6 29.6L785.7 29.8L792.7 31.4L791.9 32.5ZM550.7 28.6L559.8 30.7L552.9 31.8L551.3 33.8L548.9 34.3L547.6 36.6L544.2 36.7L538.2 35.1L540.7 34.1L536.6 33.3L531.2 30.9L529.0 28.7L536.6 27.7L538.1 28.7L542.1 28.7L543.1 27.7L547.2 27.6L550.7 28.6ZM570.7 26.6L576.1 27.6L572.0 29.1L564.0 29.4L555.8 29.0L555.3 28.2L551.3 28.2L548.2 26.9L556.8 26.1L560.9 26.8L563.7 26.0L570.7 26.6ZM642.0 26.3L638.3 26.6L635.8 26.8L635.4 27.3L632.2 27.7L629.2 27.1L630.8 26.2L624.6 26.1L630.0 25.6L634.2 25.6L634.8 26.3L636.4 25.7L639.0 25.2L643.1 25.8L642.0 26.3ZM777.6 30.9L771.5 31.2L763.8 30.4L759.2 29.4L757.1 27.4L753.3 26.8L760.5 24.9L766.5 24.3L771.9 25.7L778.3 28.4L777.6 30.9ZM258.3 28.7L261.6 29.6L257.8 30.4L252.7 32.5L247.8 32.7L242.0 32.4L239.0 31.2L239.1 30.2L241.3 29.5L236.2 29.5L233.1 28.6L231.4 27.3L233.3 26.1L235.2 25.3L238.1 25.1L236.8 24.4L243.3 24.3L246.9 25.8L251.5 26.4L256.1 26.9L258.3 28.7ZM309.7 19.1L317.1 19.4L323.1 19.7L328.2 20.5L328.1 21.2L321.3 22.4L314.6 23.0L312.1 23.6L318.1 23.6L311.6 25.3L307.0 26.1L302.3 28.3L296.5 28.8L294.8 29.4L286.4 29.7L290.2 30.0L288.3 30.5L290.6 31.9L287.9 32.8L283.6 33.6L282.3 34.7L278.4 35.5L278.8 36.2L283.6 36.0L283.6 36.7L276.2 38.4L269.0 37.6L260.8 38.1L256.7 37.7L251.4 37.6L251.1 36.2L256.2 35.6L254.8 33.6L256.5 33.4L264.0 34.6L260.2 32.8L255.7 32.3L257.9 31.2L262.8 30.6L263.6 29.6L259.7 28.5L258.5 27.1L266.1 27.2L268.3 27.5L272.6 26.5L266.4 26.2L256.7 26.3L251.8 25.4L249.4 24.3L246.2 23.5L245.6 22.5L249.7 22.0L253.0 21.9L258.4 21.4L262.5 20.4L265.9 20.6L268.9 21.3L271.1 19.8L274.7 19.4L279.7 19.1L288.2 19.0L289.7 19.3L297.7 18.8L303.7 19.0L309.7 19.1ZM424.7 18.0L442.1 20.2L437.0 21.3L426.3 21.4L411.4 21.7L412.8 22.2L422.6 21.9L431.0 22.8L436.4 22.0L438.7 23.0L435.6 24.6L442.7 23.5L456.2 22.5L464.5 23.0L466.1 24.2L454.8 26.2L453.2 26.8L444.3 27.3L450.7 27.4L447.5 29.4L445.3 31.2L445.4 34.3L448.7 36.2L444.3 36.3L439.8 37.1L444.9 38.6L445.6 41.0L442.6 41.2L446.2 43.6L440.0 43.8L443.2 45.0L442.3 45.9L438.4 46.4L434.5 46.4L438.0 48.3L438.1 49.5L432.6 48.3L431.1 49.1L434.9 49.8L438.5 51.5L439.6 53.7L434.6 54.2L432.5 53.2L429.0 51.6L430.0 53.5L426.8 54.9L434.1 55.0L437.9 55.2L430.5 57.6L422.9 59.8L414.8 60.8L411.7 60.8L408.9 61.8L405.0 64.8L399.0 66.7L397.1 66.8L393.4 67.5L389.4 68.2L387.0 69.9L387.0 71.8L385.6 73.7L381.1 75.9L382.2 78.1L380.9 80.3L379.5 83.1L375.6 83.2L371.5 81.0L365.9 80.9L363.2 79.4L361.4 76.7L356.6 73.3L355.2 71.4L354.8 69.0L350.9 66.4L351.9 64.3L350.1 63.4L352.8 60.1L357.0 59.1L358.1 57.9L358.7 55.8L355.5 56.7L354.0 57.1L351.5 57.5L348.1 56.6L347.9 54.8L349.0 53.3L351.6 53.2L357.2 54.0L352.5 52.2L350.0 51.3L347.2 51.6L344.9 51.0L348.0 48.4L346.3 47.3L344.1 45.4L340.8 42.5L337.2 41.4L337.3 40.2L329.8 38.6L323.9 38.4L316.5 38.5L309.7 38.7L306.5 37.8L301.7 36.1L309.0 35.2L314.5 35.1L302.7 34.3L296.4 33.2L296.8 32.1L307.3 30.8L317.5 29.5L318.5 28.4L311.0 27.5L313.5 26.3L323.1 24.4L327.1 24.1L326.0 22.9L332.5 22.1L341.1 21.7L349.6 21.7L352.7 22.5L360.0 21.0L366.7 22.0L370.6 22.3L376.3 23.2L369.7 21.7L370.1 20.5L379.4 18.8L389.2 18.9L392.7 17.9L402.5 17.7L424.7 18.0Z"></path>
+          <path class="tz-night" id="tzNight" d=""></path>
+          <g id="tzHourLines" class="tz-hours" style="display:none"></g>
+          <g id="tzSun"></g>
+          <g id="tzCities"></g>
+          <g id="tzMarkers"></g>
+        </svg>
+        <div class="tzmap-legend">☀ day · 🌙 night · • city · ★ pinned</div>
       </div>
-      <div class="clock-card">
-        <div class="clock-label-top">UTC</div>
-        <div class="clock-main-big" id="utc-time"></div>
-        <div class="clock-meta-big">Coordinated Universal Time</div>
-      </div>
-      <div class="clock-card">
-        <div class="clock-label-top">Epoch</div>
-        <div class="clock-main-big" id="epoch-time"></div>
-        <div class="clock-meta-big">Unix seconds since 1970-01-01</div>
+          <div class="zones-selected">
+            <div class="divider">Selected timezones <button class="btn sm" id="clearPins" style="float:right;margin-top:-4px">Clear</button></div>
+            <div class="zone-strip" id="pinnedGrid"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Pinned zones -->
-    <div class="pinned-wrapper" id="pinned-wrapper">
-      <div class="pinned-header-row">
-        <div class="pinned-title">Pinned zones</div>
-        <button type="button" class="pinned-clear-btn" id="clear-pins">Clear pinned</button>
+    <!-- COUNTDOWNS (popup) -->
+    <div class="modal" id="countdownsModal" hidden>
+      <div class="modal-backdrop" id="cdBackdrop"></div>
+      <div class="modal-card modal-wide">
+        <div class="modal-head">
+          <div class="modal-title">Countdowns</div>
+          <div class="search"><span class="ico">⌕</span><input id="cdSearch" placeholder="Search events…" autocomplete="off" spellcheck="false"></div>
+          <button class="modal-close" id="closeCountdowns" aria-label="Close Countdowns">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="cd-hero" id="cdHero" hidden>
+        <div class="cd-name" id="heroName"></div>
+        <div class="cd-when" id="heroWhen"></div>
+        <div class="cd-clock" id="heroClock"></div>
       </div>
-      <div class="pinned-grid" id="pinned-grid"></div>
+      <form class="cd-add" id="cdAdd">
+        <div class="field grow"><label for="evName">Event</label><input id="evName" placeholder="e.g. Project launch" maxlength="60" required></div>
+        <div class="field"><label for="evDate">Date</label><input id="evDate" type="date" required></div>
+        <div class="field"><label for="evTime">Time (optional)</label><input id="evTime" type="time"></div>
+        <button class="btn btn-primary" type="submit" style="height:38px">＋ Add</button>
+        <button class="btn" type="button" id="shareBtn" style="height:38px">⇪ Share</button>
+      </form>
+          <div class="cd-grid" id="cdGrid"></div>
+          <div class="muted-note" id="cdEmpty" hidden>No countdowns yet — add one above.</div>
+        </div>
+      </div>
     </div>
-  </section>
+  </main>
 
-  <!-- Search and hint -->
-  <div class="filters-row">
-    <div class="filter-field">
-      <label for="search" class="filter-label">Filter zones</label>
-      <input id="search" type="text"
-             placeholder="Search by city, abbreviation or offset (e.g. Tokyo, JST, +09)"
-             aria-label="Filter time zones">
-    </div>
-    <div class="filters-hint">
-      Filters the table below by city, abbreviation or offset.<br>
-      Pin a zone with 📍 to keep it at the top.
+  <!-- zone search popup (opened from the Zones tab) -->
+  <div class="zone-popup" id="zonePopup" hidden>
+    <div class="zp-backdrop" id="zpBackdrop"></div>
+    <div class="zp-card" role="dialog" aria-modal="true" aria-label="Search time zones">
+      <div class="zp-head">
+        <div class="search"><span class="ico">⌕</span><input id="zoneSearch" placeholder="Search cities / timezones…" autocomplete="off" spellcheck="false"></div>
+        <button class="zp-close" id="closeZoneSearch" aria-label="Close search">✕</button>
+      </div>
+      <div class="region-bar" id="regionBar"></div>
+      <div class="zp-body">
+        <div id="zoneGroups"></div>
+        <div class="muted-note" id="zoneEmpty" hidden>No timezone matches that search.</div>
+      </div>
     </div>
   </div>
-  <!-- Main panel with table (always visible; capped height, scrolls internally) -->
-  <section class="main-panel" aria-label="Time zones table">
-    <div class="table-shell" role="region" aria-label="World time zones">
-      <div class="table-scroll">
-        <table id="zones-table">
-          <caption>Current local time in all available IANA time zones</caption>
-          <thead>
-          <tr>
-            <th scope="col" class="pin-cell">📌</th>
-            <th scope="col">Zone</th>
-            <th scope="col">Abbr.</th>
-            <th scope="col">Offset</th>
-            <th scope="col">DST</th>
-            <th scope="col">Date &amp; Time</th>
-            <th scope="col">Currency</th>
-            <th scope="col">Call</th>
-          </tr>
-          </thead>
-          <tbody id="zones-tbody">
-          <tr id="no-results-row" class="no-results" style="display:none;">
-            <td colspan="8">No time zones match your search.</td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-</div>
-</div>
 
-<noscript>
-  <p style="padding:1rem;color:#fff;background:#111;">
-    JavaScript is required to show the live world clock and time-zone table.
-  </p>
-</noscript>
+  <div class="toast" id="toast"></div>
 
-<script>
-  // ========= Country metadata (country -> flag, currency, phone) =========
-  // Complete ISO 3166-1 set. Currency = ISO 4217 (CLDR/Babel), phone = E.164 calling code.
-  const COUNTRY_META = {
-    AD: { flag: "🇦🇩", currency: "EUR", phone: "+376" },
-    AE: { flag: "🇦🇪", currency: "AED", phone: "+971" },
-    AF: { flag: "🇦🇫", currency: "AFN", phone: "+93" },
-    AG: { flag: "🇦🇬", currency: "XCD", phone: "+1" },
-    AI: { flag: "🇦🇮", currency: "XCD", phone: "+1" },
-    AL: { flag: "🇦🇱", currency: "ALL", phone: "+355" },
-    AM: { flag: "🇦🇲", currency: "AMD", phone: "+374" },
-    AO: { flag: "🇦🇴", currency: "AOA", phone: "+244" },
-    AQ: { flag: "🇦🇶", currency: "—", phone: "—" },
-    AR: { flag: "🇦🇷", currency: "ARS", phone: "+54" },
-    AS: { flag: "🇦🇸", currency: "USD", phone: "+1" },
-    AT: { flag: "🇦🇹", currency: "EUR", phone: "+43" },
-    AU: { flag: "🇦🇺", currency: "AUD", phone: "+61" },
-    AW: { flag: "🇦🇼", currency: "AWG", phone: "+297" },
-    AX: { flag: "🇦🇽", currency: "EUR", phone: "+358" },
-    AZ: { flag: "🇦🇿", currency: "AZN", phone: "+994" },
-    BA: { flag: "🇧🇦", currency: "BAM", phone: "+387" },
-    BB: { flag: "🇧🇧", currency: "BBD", phone: "+1" },
-    BD: { flag: "🇧🇩", currency: "BDT", phone: "+880" },
-    BE: { flag: "🇧🇪", currency: "EUR", phone: "+32" },
-    BF: { flag: "🇧🇫", currency: "XOF", phone: "+226" },
-    BG: { flag: "🇧🇬", currency: "BGN", phone: "+359" },
-    BH: { flag: "🇧🇭", currency: "BHD", phone: "+973" },
-    BI: { flag: "🇧🇮", currency: "BIF", phone: "+257" },
-    BJ: { flag: "🇧🇯", currency: "XOF", phone: "+229" },
-    BL: { flag: "🇧🇱", currency: "EUR", phone: "+590" },
-    BM: { flag: "🇧🇲", currency: "BMD", phone: "+1" },
-    BN: { flag: "🇧🇳", currency: "BND", phone: "+673" },
-    BO: { flag: "🇧🇴", currency: "BOB", phone: "+591" },
-    BQ: { flag: "🇧🇶", currency: "USD", phone: "+599" },
-    BR: { flag: "🇧🇷", currency: "BRL", phone: "+55" },
-    BS: { flag: "🇧🇸", currency: "BSD", phone: "+1" },
-    BT: { flag: "🇧🇹", currency: "INR", phone: "+975" },
-    BV: { flag: "🇧🇻", currency: "NOK", phone: "—" },
-    BW: { flag: "🇧🇼", currency: "BWP", phone: "+267" },
-    BY: { flag: "🇧🇾", currency: "BYN", phone: "+375" },
-    BZ: { flag: "🇧🇿", currency: "BZD", phone: "+501" },
-    CA: { flag: "🇨🇦", currency: "CAD", phone: "+1" },
-    CC: { flag: "🇨🇨", currency: "AUD", phone: "+61" },
-    CD: { flag: "🇨🇩", currency: "CDF", phone: "+243" },
-    CF: { flag: "🇨🇫", currency: "XAF", phone: "+236" },
-    CG: { flag: "🇨🇬", currency: "XAF", phone: "+242" },
-    CH: { flag: "🇨🇭", currency: "CHF", phone: "+41" },
-    CI: { flag: "🇨🇮", currency: "XOF", phone: "+225" },
-    CK: { flag: "🇨🇰", currency: "NZD", phone: "+682" },
-    CL: { flag: "🇨🇱", currency: "CLP", phone: "+56" },
-    CM: { flag: "🇨🇲", currency: "XAF", phone: "+237" },
-    CN: { flag: "🇨🇳", currency: "CNY", phone: "+86" },
-    CO: { flag: "🇨🇴", currency: "COP", phone: "+57" },
-    CR: { flag: "🇨🇷", currency: "CRC", phone: "+506" },
-    CU: { flag: "🇨🇺", currency: "CUP", phone: "+53" },
-    CV: { flag: "🇨🇻", currency: "CVE", phone: "+238" },
-    CW: { flag: "🇨🇼", currency: "XCG", phone: "+599" },
-    CX: { flag: "🇨🇽", currency: "AUD", phone: "+61" },
-    CY: { flag: "🇨🇾", currency: "EUR", phone: "+357" },
-    CZ: { flag: "🇨🇿", currency: "CZK", phone: "+420" },
-    DE: { flag: "🇩🇪", currency: "EUR", phone: "+49" },
-    DJ: { flag: "🇩🇯", currency: "DJF", phone: "+253" },
-    DK: { flag: "🇩🇰", currency: "DKK", phone: "+45" },
-    DM: { flag: "🇩🇲", currency: "XCD", phone: "+1" },
-    DO: { flag: "🇩🇴", currency: "DOP", phone: "+1" },
-    DZ: { flag: "🇩🇿", currency: "DZD", phone: "+213" },
-    EC: { flag: "🇪🇨", currency: "USD", phone: "+593" },
-    EE: { flag: "🇪🇪", currency: "EUR", phone: "+372" },
-    EG: { flag: "🇪🇬", currency: "EGP", phone: "+20" },
-    EH: { flag: "🇪🇭", currency: "MAD", phone: "+212" },
-    ER: { flag: "🇪🇷", currency: "ERN", phone: "+291" },
-    ES: { flag: "🇪🇸", currency: "EUR", phone: "+34" },
-    ET: { flag: "🇪🇹", currency: "ETB", phone: "+251" },
-    FI: { flag: "🇫🇮", currency: "EUR", phone: "+358" },
-    FJ: { flag: "🇫🇯", currency: "FJD", phone: "+679" },
-    FK: { flag: "🇫🇰", currency: "FKP", phone: "+500" },
-    FM: { flag: "🇫🇲", currency: "USD", phone: "+691" },
-    FO: { flag: "🇫🇴", currency: "DKK", phone: "+298" },
-    FR: { flag: "🇫🇷", currency: "EUR", phone: "+33" },
-    GA: { flag: "🇬🇦", currency: "XAF", phone: "+241" },
-    GB: { flag: "🇬🇧", currency: "GBP", phone: "+44" },
-    GD: { flag: "🇬🇩", currency: "XCD", phone: "+1" },
-    GE: { flag: "🇬🇪", currency: "GEL", phone: "+995" },
-    GF: { flag: "🇬🇫", currency: "EUR", phone: "+594" },
-    GG: { flag: "🇬🇬", currency: "GBP", phone: "+44" },
-    GH: { flag: "🇬🇭", currency: "GHS", phone: "+233" },
-    GI: { flag: "🇬🇮", currency: "GIP", phone: "+350" },
-    GL: { flag: "🇬🇱", currency: "DKK", phone: "+299" },
-    GM: { flag: "🇬🇲", currency: "GMD", phone: "+220" },
-    GN: { flag: "🇬🇳", currency: "GNF", phone: "+224" },
-    GP: { flag: "🇬🇵", currency: "EUR", phone: "+590" },
-    GQ: { flag: "🇬🇶", currency: "XAF", phone: "+240" },
-    GR: { flag: "🇬🇷", currency: "EUR", phone: "+30" },
-    GS: { flag: "🇬🇸", currency: "GBP", phone: "—" },
-    GT: { flag: "🇬🇹", currency: "GTQ", phone: "+502" },
-    GU: { flag: "🇬🇺", currency: "USD", phone: "+1" },
-    GW: { flag: "🇬🇼", currency: "XOF", phone: "+245" },
-    GY: { flag: "🇬🇾", currency: "GYD", phone: "+592" },
-    HK: { flag: "🇭🇰", currency: "HKD", phone: "+852" },
-    HM: { flag: "🇭🇲", currency: "AUD", phone: "—" },
-    HN: { flag: "🇭🇳", currency: "HNL", phone: "+504" },
-    HR: { flag: "🇭🇷", currency: "EUR", phone: "+385" },
-    HT: { flag: "🇭🇹", currency: "HTG", phone: "+509" },
-    HU: { flag: "🇭🇺", currency: "HUF", phone: "+36" },
-    ID: { flag: "🇮🇩", currency: "IDR", phone: "+62" },
-    IE: { flag: "🇮🇪", currency: "EUR", phone: "+353" },
-    IL: { flag: "🇮🇱", currency: "ILS", phone: "+972" },
-    IM: { flag: "🇮🇲", currency: "GBP", phone: "+44" },
-    IN: { flag: "🇮🇳", currency: "INR", phone: "+91" },
-    IO: { flag: "🇮🇴", currency: "USD", phone: "+246" },
-    IQ: { flag: "🇮🇶", currency: "IQD", phone: "+964" },
-    IR: { flag: "🇮🇷", currency: "IRR", phone: "+98" },
-    IS: { flag: "🇮🇸", currency: "ISK", phone: "+354" },
-    IT: { flag: "🇮🇹", currency: "EUR", phone: "+39" },
-    JE: { flag: "🇯🇪", currency: "GBP", phone: "+44" },
-    JM: { flag: "🇯🇲", currency: "JMD", phone: "+1" },
-    JO: { flag: "🇯🇴", currency: "JOD", phone: "+962" },
-    JP: { flag: "🇯🇵", currency: "JPY", phone: "+81" },
-    KE: { flag: "🇰🇪", currency: "KES", phone: "+254" },
-    KG: { flag: "🇰🇬", currency: "KGS", phone: "+996" },
-    KH: { flag: "🇰🇭", currency: "KHR", phone: "+855" },
-    KI: { flag: "🇰🇮", currency: "AUD", phone: "+686" },
-    KM: { flag: "🇰🇲", currency: "KMF", phone: "+269" },
-    KN: { flag: "🇰🇳", currency: "XCD", phone: "+1" },
-    KP: { flag: "🇰🇵", currency: "KPW", phone: "+850" },
-    KR: { flag: "🇰🇷", currency: "KRW", phone: "+82" },
-    KW: { flag: "🇰🇼", currency: "KWD", phone: "+965" },
-    KY: { flag: "🇰🇾", currency: "KYD", phone: "+1" },
-    KZ: { flag: "🇰🇿", currency: "KZT", phone: "+7" },
-    LA: { flag: "🇱🇦", currency: "LAK", phone: "+856" },
-    LB: { flag: "🇱🇧", currency: "LBP", phone: "+961" },
-    LC: { flag: "🇱🇨", currency: "XCD", phone: "+1" },
-    LI: { flag: "🇱🇮", currency: "CHF", phone: "+423" },
-    LK: { flag: "🇱🇰", currency: "LKR", phone: "+94" },
-    LR: { flag: "🇱🇷", currency: "LRD", phone: "+231" },
-    LS: { flag: "🇱🇸", currency: "ZAR", phone: "+266" },
-    LT: { flag: "🇱🇹", currency: "EUR", phone: "+370" },
-    LU: { flag: "🇱🇺", currency: "EUR", phone: "+352" },
-    LV: { flag: "🇱🇻", currency: "EUR", phone: "+371" },
-    LY: { flag: "🇱🇾", currency: "LYD", phone: "+218" },
-    MA: { flag: "🇲🇦", currency: "MAD", phone: "+212" },
-    MC: { flag: "🇲🇨", currency: "EUR", phone: "+377" },
-    MD: { flag: "🇲🇩", currency: "MDL", phone: "+373" },
-    ME: { flag: "🇲🇪", currency: "EUR", phone: "+382" },
-    MF: { flag: "🇲🇫", currency: "EUR", phone: "+590" },
-    MG: { flag: "🇲🇬", currency: "MGA", phone: "+261" },
-    MH: { flag: "🇲🇭", currency: "USD", phone: "+692" },
-    MK: { flag: "🇲🇰", currency: "MKD", phone: "+389" },
-    ML: { flag: "🇲🇱", currency: "XOF", phone: "+223" },
-    MM: { flag: "🇲🇲", currency: "MMK", phone: "+95" },
-    MN: { flag: "🇲🇳", currency: "MNT", phone: "+976" },
-    MO: { flag: "🇲🇴", currency: "MOP", phone: "+853" },
-    MP: { flag: "🇲🇵", currency: "USD", phone: "+1" },
-    MQ: { flag: "🇲🇶", currency: "EUR", phone: "+596" },
-    MR: { flag: "🇲🇷", currency: "MRU", phone: "+222" },
-    MS: { flag: "🇲🇸", currency: "XCD", phone: "+1" },
-    MT: { flag: "🇲🇹", currency: "EUR", phone: "+356" },
-    MU: { flag: "🇲🇺", currency: "MUR", phone: "+230" },
-    MV: { flag: "🇲🇻", currency: "MVR", phone: "+960" },
-    MW: { flag: "🇲🇼", currency: "MWK", phone: "+265" },
-    MX: { flag: "🇲🇽", currency: "MXN", phone: "+52" },
-    MY: { flag: "🇲🇾", currency: "MYR", phone: "+60" },
-    MZ: { flag: "🇲🇿", currency: "MZN", phone: "+258" },
-    NA: { flag: "🇳🇦", currency: "ZAR", phone: "+264" },
-    NC: { flag: "🇳🇨", currency: "XPF", phone: "+687" },
-    NE: { flag: "🇳🇪", currency: "XOF", phone: "+227" },
-    NF: { flag: "🇳🇫", currency: "AUD", phone: "+672" },
-    NG: { flag: "🇳🇬", currency: "NGN", phone: "+234" },
-    NI: { flag: "🇳🇮", currency: "NIO", phone: "+505" },
-    NL: { flag: "🇳🇱", currency: "EUR", phone: "+31" },
-    NO: { flag: "🇳🇴", currency: "NOK", phone: "+47" },
-    NP: { flag: "🇳🇵", currency: "NPR", phone: "+977" },
-    NR: { flag: "🇳🇷", currency: "AUD", phone: "+674" },
-    NU: { flag: "🇳🇺", currency: "NZD", phone: "+683" },
-    NZ: { flag: "🇳🇿", currency: "NZD", phone: "+64" },
-    OM: { flag: "🇴🇲", currency: "OMR", phone: "+968" },
-    PA: { flag: "🇵🇦", currency: "PAB", phone: "+507" },
-    PE: { flag: "🇵🇪", currency: "PEN", phone: "+51" },
-    PF: { flag: "🇵🇫", currency: "XPF", phone: "+689" },
-    PG: { flag: "🇵🇬", currency: "PGK", phone: "+675" },
-    PH: { flag: "🇵🇭", currency: "PHP", phone: "+63" },
-    PK: { flag: "🇵🇰", currency: "PKR", phone: "+92" },
-    PL: { flag: "🇵🇱", currency: "PLN", phone: "+48" },
-    PM: { flag: "🇵🇲", currency: "EUR", phone: "+508" },
-    PN: { flag: "🇵🇳", currency: "NZD", phone: "—" },
-    PR: { flag: "🇵🇷", currency: "USD", phone: "+1" },
-    PS: { flag: "🇵🇸", currency: "ILS", phone: "+970" },
-    PT: { flag: "🇵🇹", currency: "EUR", phone: "+351" },
-    PW: { flag: "🇵🇼", currency: "USD", phone: "+680" },
-    PY: { flag: "🇵🇾", currency: "PYG", phone: "+595" },
-    QA: { flag: "🇶🇦", currency: "QAR", phone: "+974" },
-    RE: { flag: "🇷🇪", currency: "EUR", phone: "+262" },
-    RO: { flag: "🇷🇴", currency: "RON", phone: "+40" },
-    RS: { flag: "🇷🇸", currency: "RSD", phone: "+381" },
-    RU: { flag: "🇷🇺", currency: "RUB", phone: "+7" },
-    RW: { flag: "🇷🇼", currency: "RWF", phone: "+250" },
-    SA: { flag: "🇸🇦", currency: "SAR", phone: "+966" },
-    SB: { flag: "🇸🇧", currency: "SBD", phone: "+677" },
-    SC: { flag: "🇸🇨", currency: "SCR", phone: "+248" },
-    SD: { flag: "🇸🇩", currency: "SDG", phone: "+249" },
-    SE: { flag: "🇸🇪", currency: "SEK", phone: "+46" },
-    SG: { flag: "🇸🇬", currency: "SGD", phone: "+65" },
-    SH: { flag: "🇸🇭", currency: "SHP", phone: "+290" },
-    SI: { flag: "🇸🇮", currency: "EUR", phone: "+386" },
-    SJ: { flag: "🇸🇯", currency: "NOK", phone: "+47" },
-    SK: { flag: "🇸🇰", currency: "EUR", phone: "+421" },
-    SL: { flag: "🇸🇱", currency: "SLE", phone: "+232" },
-    SM: { flag: "🇸🇲", currency: "EUR", phone: "+378" },
-    SN: { flag: "🇸🇳", currency: "XOF", phone: "+221" },
-    SO: { flag: "🇸🇴", currency: "SOS", phone: "+252" },
-    SR: { flag: "🇸🇷", currency: "SRD", phone: "+597" },
-    SS: { flag: "🇸🇸", currency: "SSP", phone: "+211" },
-    ST: { flag: "🇸🇹", currency: "STN", phone: "+239" },
-    SV: { flag: "🇸🇻", currency: "USD", phone: "+503" },
-    SX: { flag: "🇸🇽", currency: "XCG", phone: "+1" },
-    SY: { flag: "🇸🇾", currency: "SYP", phone: "+963" },
-    SZ: { flag: "🇸🇿", currency: "SZL", phone: "+268" },
-    TC: { flag: "🇹🇨", currency: "USD", phone: "+1" },
-    TD: { flag: "🇹🇩", currency: "XAF", phone: "+235" },
-    TF: { flag: "🇹🇫", currency: "EUR", phone: "—" },
-    TG: { flag: "🇹🇬", currency: "XOF", phone: "+228" },
-    TH: { flag: "🇹🇭", currency: "THB", phone: "+66" },
-    TJ: { flag: "🇹🇯", currency: "TJS", phone: "+992" },
-    TK: { flag: "🇹🇰", currency: "NZD", phone: "+690" },
-    TL: { flag: "🇹🇱", currency: "USD", phone: "+670" },
-    TM: { flag: "🇹🇲", currency: "TMT", phone: "+993" },
-    TN: { flag: "🇹🇳", currency: "TND", phone: "+216" },
-    TO: { flag: "🇹🇴", currency: "TOP", phone: "+676" },
-    TR: { flag: "🇹🇷", currency: "TRY", phone: "+90" },
-    TT: { flag: "🇹🇹", currency: "TTD", phone: "+1" },
-    TV: { flag: "🇹🇻", currency: "AUD", phone: "+688" },
-    TW: { flag: "🇹🇼", currency: "TWD", phone: "+886" },
-    TZ: { flag: "🇹🇿", currency: "TZS", phone: "+255" },
-    UA: { flag: "🇺🇦", currency: "UAH", phone: "+380" },
-    UG: { flag: "🇺🇬", currency: "UGX", phone: "+256" },
-    UM: { flag: "🇺🇲", currency: "USD", phone: "—" },
-    US: { flag: "🇺🇸", currency: "USD", phone: "+1" },
-    UY: { flag: "🇺🇾", currency: "UYU", phone: "+598" },
-    UZ: { flag: "🇺🇿", currency: "UZS", phone: "+998" },
-    VA: { flag: "🇻🇦", currency: "EUR", phone: "+39" },
-    VC: { flag: "🇻🇨", currency: "XCD", phone: "+1" },
-    VE: { flag: "🇻🇪", currency: "VES", phone: "+58" },
-    VG: { flag: "🇻🇬", currency: "USD", phone: "+1" },
-    VI: { flag: "🇻🇮", currency: "USD", phone: "+1" },
-    VN: { flag: "🇻🇳", currency: "VND", phone: "+84" },
-    VU: { flag: "🇻🇺", currency: "VUV", phone: "+678" },
-    WF: { flag: "🇼🇫", currency: "XPF", phone: "+681" },
-    WS: { flag: "🇼🇸", currency: "WST", phone: "+685" },
-    YE: { flag: "🇾🇪", currency: "YER", phone: "+967" },
-    YT: { flag: "🇾🇹", currency: "EUR", phone: "+262" },
-    ZA: { flag: "🇿🇦", currency: "ZAR", phone: "+27" },
-    ZM: { flag: "🇿🇲", currency: "ZMW", phone: "+260" },
-    ZW: { flag: "🇿🇼", currency: "USD", phone: "+263" },
-  };
+  <script src="carino-clock.js"></script>
+  <script src="carino-navbar.js" data-app="Time" defer></script>
+  <script>
+  (function(){
+    'use strict';
+    var $=function(id){return document.getElementById(id)};
+    var LS_FMT='time.fmt', LS_PINS='time.pins', LS_EVENTS='time.events', LS_HIDDEN='time.hidden', LS_HOURS='time.hourlines';
+    var hour12 = localStorage.getItem(LS_FMT)==='12';   // default 24h
 
-  // ========= IANA time zone -> country code =========
-  // Generated from the IANA tz database (zone.tab + Link aliases); covers every
-  // zone returned by Intl.supportedValuesOf("timeZone"). Anything unmapped
-  // (e.g. Etc/*, UTC) falls back to META_FALLBACK.
-  const TZ_TO_COUNTRY = {
-    "Africa/Abidjan": "CI",
-    "Africa/Accra": "GH",
-    "Africa/Addis_Ababa": "ET",
-    "Africa/Algiers": "DZ",
-    "Africa/Asmara": "ER",
-    "Africa/Asmera": "ER",
-    "Africa/Bamako": "ML",
-    "Africa/Bangui": "CF",
-    "Africa/Banjul": "GM",
-    "Africa/Bissau": "GW",
-    "Africa/Blantyre": "MW",
-    "Africa/Brazzaville": "CG",
-    "Africa/Bujumbura": "BI",
-    "Africa/Cairo": "EG",
-    "Africa/Casablanca": "MA",
-    "Africa/Ceuta": "ES",
-    "Africa/Conakry": "GN",
-    "Africa/Dakar": "SN",
-    "Africa/Dar_es_Salaam": "TZ",
-    "Africa/Djibouti": "DJ",
-    "Africa/Douala": "CM",
-    "Africa/El_Aaiun": "EH",
-    "Africa/Freetown": "SL",
-    "Africa/Gaborone": "BW",
-    "Africa/Harare": "ZW",
-    "Africa/Johannesburg": "ZA",
-    "Africa/Juba": "SS",
-    "Africa/Kampala": "UG",
-    "Africa/Khartoum": "SD",
-    "Africa/Kigali": "RW",
-    "Africa/Kinshasa": "CD",
-    "Africa/Lagos": "NG",
-    "Africa/Libreville": "GA",
-    "Africa/Lome": "TG",
-    "Africa/Luanda": "AO",
-    "Africa/Lubumbashi": "CD",
-    "Africa/Lusaka": "ZM",
-    "Africa/Malabo": "GQ",
-    "Africa/Maputo": "MZ",
-    "Africa/Maseru": "LS",
-    "Africa/Mbabane": "SZ",
-    "Africa/Mogadishu": "SO",
-    "Africa/Monrovia": "LR",
-    "Africa/Nairobi": "KE",
-    "Africa/Ndjamena": "TD",
-    "Africa/Niamey": "NE",
-    "Africa/Nouakchott": "MR",
-    "Africa/Ouagadougou": "BF",
-    "Africa/Porto-Novo": "BJ",
-    "Africa/Sao_Tome": "ST",
-    "Africa/Timbuktu": "ML",
-    "Africa/Tripoli": "LY",
-    "Africa/Tunis": "TN",
-    "Africa/Windhoek": "NA",
-    "America/Adak": "US",
-    "America/Anchorage": "US",
-    "America/Anguilla": "AI",
-    "America/Antigua": "AG",
-    "America/Araguaina": "BR",
-    "America/Argentina/Buenos_Aires": "AR",
-    "America/Argentina/Catamarca": "AR",
-    "America/Argentina/ComodRivadavia": "AR",
-    "America/Argentina/Cordoba": "AR",
-    "America/Argentina/Jujuy": "AR",
-    "America/Argentina/La_Rioja": "AR",
-    "America/Argentina/Mendoza": "AR",
-    "America/Argentina/Rio_Gallegos": "AR",
-    "America/Argentina/Salta": "AR",
-    "America/Argentina/San_Juan": "AR",
-    "America/Argentina/San_Luis": "AR",
-    "America/Argentina/Tucuman": "AR",
-    "America/Argentina/Ushuaia": "AR",
-    "America/Aruba": "AW",
-    "America/Asuncion": "PY",
-    "America/Atikokan": "CA",
-    "America/Atka": "US",
-    "America/Bahia": "BR",
-    "America/Bahia_Banderas": "MX",
-    "America/Barbados": "BB",
-    "America/Belem": "BR",
-    "America/Belize": "BZ",
-    "America/Blanc-Sablon": "CA",
-    "America/Boa_Vista": "BR",
-    "America/Bogota": "CO",
-    "America/Boise": "US",
-    "America/Buenos_Aires": "AR",
-    "America/Cambridge_Bay": "CA",
-    "America/Campo_Grande": "BR",
-    "America/Cancun": "MX",
-    "America/Caracas": "VE",
-    "America/Catamarca": "AR",
-    "America/Cayenne": "GF",
-    "America/Cayman": "KY",
-    "America/Chicago": "US",
-    "America/Chihuahua": "MX",
-    "America/Ciudad_Juarez": "MX",
-    "America/Coral_Harbour": "CA",
-    "America/Cordoba": "AR",
-    "America/Costa_Rica": "CR",
-    "America/Coyhaique": "CL",
-    "America/Creston": "CA",
-    "America/Cuiaba": "BR",
-    "America/Curacao": "CW",
-    "America/Danmarkshavn": "GL",
-    "America/Dawson": "CA",
-    "America/Dawson_Creek": "CA",
-    "America/Denver": "US",
-    "America/Detroit": "US",
-    "America/Dominica": "DM",
-    "America/Edmonton": "CA",
-    "America/Eirunepe": "BR",
-    "America/El_Salvador": "SV",
-    "America/Ensenada": "MX",
-    "America/Fort_Nelson": "CA",
-    "America/Fort_Wayne": "US",
-    "America/Fortaleza": "BR",
-    "America/Glace_Bay": "CA",
-    "America/Godthab": "GL",
-    "America/Goose_Bay": "CA",
-    "America/Grand_Turk": "TC",
-    "America/Grenada": "GD",
-    "America/Guadeloupe": "GP",
-    "America/Guatemala": "GT",
-    "America/Guayaquil": "EC",
-    "America/Guyana": "GY",
-    "America/Halifax": "CA",
-    "America/Havana": "CU",
-    "America/Hermosillo": "MX",
-    "America/Indiana/Indianapolis": "US",
-    "America/Indiana/Knox": "US",
-    "America/Indiana/Marengo": "US",
-    "America/Indiana/Petersburg": "US",
-    "America/Indiana/Tell_City": "US",
-    "America/Indiana/Vevay": "US",
-    "America/Indiana/Vincennes": "US",
-    "America/Indiana/Winamac": "US",
-    "America/Indianapolis": "US",
-    "America/Inuvik": "CA",
-    "America/Iqaluit": "CA",
-    "America/Jamaica": "JM",
-    "America/Jujuy": "AR",
-    "America/Juneau": "US",
-    "America/Kentucky/Louisville": "US",
-    "America/Kentucky/Monticello": "US",
-    "America/Knox_IN": "US",
-    "America/Kralendijk": "BQ",
-    "America/La_Paz": "BO",
-    "America/Lima": "PE",
-    "America/Los_Angeles": "US",
-    "America/Louisville": "US",
-    "America/Lower_Princes": "SX",
-    "America/Maceio": "BR",
-    "America/Managua": "NI",
-    "America/Manaus": "BR",
-    "America/Marigot": "MF",
-    "America/Martinique": "MQ",
-    "America/Matamoros": "MX",
-    "America/Mazatlan": "MX",
-    "America/Mendoza": "AR",
-    "America/Menominee": "US",
-    "America/Merida": "MX",
-    "America/Metlakatla": "US",
-    "America/Mexico_City": "MX",
-    "America/Miquelon": "PM",
-    "America/Moncton": "CA",
-    "America/Monterrey": "MX",
-    "America/Montevideo": "UY",
-    "America/Montreal": "CA",
-    "America/Montserrat": "MS",
-    "America/Nassau": "BS",
-    "America/New_York": "US",
-    "America/Nipigon": "CA",
-    "America/Nome": "US",
-    "America/Noronha": "BR",
-    "America/North_Dakota/Beulah": "US",
-    "America/North_Dakota/Center": "US",
-    "America/North_Dakota/New_Salem": "US",
-    "America/Nuuk": "GL",
-    "America/Ojinaga": "MX",
-    "America/Panama": "PA",
-    "America/Pangnirtung": "CA",
-    "America/Paramaribo": "SR",
-    "America/Phoenix": "US",
-    "America/Port-au-Prince": "HT",
-    "America/Port_of_Spain": "TT",
-    "America/Porto_Acre": "BR",
-    "America/Porto_Velho": "BR",
-    "America/Puerto_Rico": "PR",
-    "America/Punta_Arenas": "CL",
-    "America/Rainy_River": "CA",
-    "America/Rankin_Inlet": "CA",
-    "America/Recife": "BR",
-    "America/Regina": "CA",
-    "America/Resolute": "CA",
-    "America/Rio_Branco": "BR",
-    "America/Rosario": "AR",
-    "America/Santa_Isabel": "MX",
-    "America/Santarem": "BR",
-    "America/Santiago": "CL",
-    "America/Santo_Domingo": "DO",
-    "America/Sao_Paulo": "BR",
-    "America/Scoresbysund": "GL",
-    "America/Shiprock": "US",
-    "America/Sitka": "US",
-    "America/St_Barthelemy": "BL",
-    "America/St_Johns": "CA",
-    "America/St_Kitts": "KN",
-    "America/St_Lucia": "LC",
-    "America/St_Thomas": "VI",
-    "America/St_Vincent": "VC",
-    "America/Swift_Current": "CA",
-    "America/Tegucigalpa": "HN",
-    "America/Thule": "GL",
-    "America/Thunder_Bay": "CA",
-    "America/Tijuana": "MX",
-    "America/Toronto": "CA",
-    "America/Tortola": "VG",
-    "America/Vancouver": "CA",
-    "America/Virgin": "VI",
-    "America/Whitehorse": "CA",
-    "America/Winnipeg": "CA",
-    "America/Yakutat": "US",
-    "America/Yellowknife": "CA",
-    "Antarctica/Casey": "AQ",
-    "Antarctica/Davis": "AQ",
-    "Antarctica/DumontDUrville": "AQ",
-    "Antarctica/Macquarie": "AU",
-    "Antarctica/Mawson": "AQ",
-    "Antarctica/McMurdo": "AQ",
-    "Antarctica/Palmer": "AQ",
-    "Antarctica/Rothera": "AQ",
-    "Antarctica/South_Pole": "AQ",
-    "Antarctica/Syowa": "AQ",
-    "Antarctica/Troll": "AQ",
-    "Antarctica/Vostok": "AQ",
-    "Arctic/Longyearbyen": "SJ",
-    "Asia/Aden": "YE",
-    "Asia/Almaty": "KZ",
-    "Asia/Amman": "JO",
-    "Asia/Anadyr": "RU",
-    "Asia/Aqtau": "KZ",
-    "Asia/Aqtobe": "KZ",
-    "Asia/Ashgabat": "TM",
-    "Asia/Ashkhabad": "TM",
-    "Asia/Atyrau": "KZ",
-    "Asia/Baghdad": "IQ",
-    "Asia/Bahrain": "BH",
-    "Asia/Baku": "AZ",
-    "Asia/Bangkok": "TH",
-    "Asia/Barnaul": "RU",
-    "Asia/Beirut": "LB",
-    "Asia/Bishkek": "KG",
-    "Asia/Brunei": "BN",
-    "Asia/Calcutta": "IN",
-    "Asia/Chita": "RU",
-    "Asia/Choibalsan": "MN",
-    "Asia/Chongqing": "CN",
-    "Asia/Chungking": "CN",
-    "Asia/Colombo": "LK",
-    "Asia/Dacca": "BD",
-    "Asia/Damascus": "SY",
-    "Asia/Dhaka": "BD",
-    "Asia/Dili": "TL",
-    "Asia/Dubai": "AE",
-    "Asia/Dushanbe": "TJ",
-    "Asia/Famagusta": "CY",
-    "Asia/Gaza": "PS",
-    "Asia/Harbin": "CN",
-    "Asia/Hebron": "PS",
-    "Asia/Ho_Chi_Minh": "VN",
-    "Asia/Hong_Kong": "HK",
-    "Asia/Hovd": "MN",
-    "Asia/Irkutsk": "RU",
-    "Asia/Istanbul": "TR",
-    "Asia/Jakarta": "ID",
-    "Asia/Jayapura": "ID",
-    "Asia/Jerusalem": "IL",
-    "Asia/Kabul": "AF",
-    "Asia/Kamchatka": "RU",
-    "Asia/Karachi": "PK",
-    "Asia/Kashgar": "CN",
-    "Asia/Kathmandu": "NP",
-    "Asia/Katmandu": "NP",
-    "Asia/Khandyga": "RU",
-    "Asia/Kolkata": "IN",
-    "Asia/Krasnoyarsk": "RU",
-    "Asia/Kuala_Lumpur": "MY",
-    "Asia/Kuching": "MY",
-    "Asia/Kuwait": "KW",
-    "Asia/Macao": "MO",
-    "Asia/Macau": "MO",
-    "Asia/Magadan": "RU",
-    "Asia/Makassar": "ID",
-    "Asia/Manila": "PH",
-    "Asia/Muscat": "OM",
-    "Asia/Nicosia": "CY",
-    "Asia/Novokuznetsk": "RU",
-    "Asia/Novosibirsk": "RU",
-    "Asia/Omsk": "RU",
-    "Asia/Oral": "KZ",
-    "Asia/Phnom_Penh": "KH",
-    "Asia/Pontianak": "ID",
-    "Asia/Pyongyang": "KP",
-    "Asia/Qatar": "QA",
-    "Asia/Qostanay": "KZ",
-    "Asia/Qyzylorda": "KZ",
-    "Asia/Rangoon": "MM",
-    "Asia/Riyadh": "SA",
-    "Asia/Saigon": "VN",
-    "Asia/Sakhalin": "RU",
-    "Asia/Samarkand": "UZ",
-    "Asia/Seoul": "KR",
-    "Asia/Shanghai": "CN",
-    "Asia/Singapore": "SG",
-    "Asia/Srednekolymsk": "RU",
-    "Asia/Taipei": "TW",
-    "Asia/Tashkent": "UZ",
-    "Asia/Tbilisi": "GE",
-    "Asia/Tehran": "IR",
-    "Asia/Tel_Aviv": "IL",
-    "Asia/Thimbu": "BT",
-    "Asia/Thimphu": "BT",
-    "Asia/Tokyo": "JP",
-    "Asia/Tomsk": "RU",
-    "Asia/Ujung_Pandang": "ID",
-    "Asia/Ulaanbaatar": "MN",
-    "Asia/Ulan_Bator": "MN",
-    "Asia/Urumqi": "CN",
-    "Asia/Ust-Nera": "RU",
-    "Asia/Vientiane": "LA",
-    "Asia/Vladivostok": "RU",
-    "Asia/Yakutsk": "RU",
-    "Asia/Yangon": "MM",
-    "Asia/Yekaterinburg": "RU",
-    "Asia/Yerevan": "AM",
-    "Atlantic/Azores": "PT",
-    "Atlantic/Bermuda": "BM",
-    "Atlantic/Canary": "ES",
-    "Atlantic/Cape_Verde": "CV",
-    "Atlantic/Faeroe": "FO",
-    "Atlantic/Faroe": "FO",
-    "Atlantic/Jan_Mayen": "NO",
-    "Atlantic/Madeira": "PT",
-    "Atlantic/Reykjavik": "IS",
-    "Atlantic/South_Georgia": "GS",
-    "Atlantic/St_Helena": "SH",
-    "Atlantic/Stanley": "FK",
-    "Australia/ACT": "AU",
-    "Australia/Adelaide": "AU",
-    "Australia/Brisbane": "AU",
-    "Australia/Broken_Hill": "AU",
-    "Australia/Canberra": "AU",
-    "Australia/Currie": "AU",
-    "Australia/Darwin": "AU",
-    "Australia/Eucla": "AU",
-    "Australia/Hobart": "AU",
-    "Australia/LHI": "AU",
-    "Australia/Lindeman": "AU",
-    "Australia/Lord_Howe": "AU",
-    "Australia/Melbourne": "AU",
-    "Australia/NSW": "AU",
-    "Australia/North": "AU",
-    "Australia/Perth": "AU",
-    "Australia/Queensland": "AU",
-    "Australia/South": "AU",
-    "Australia/Sydney": "AU",
-    "Australia/Tasmania": "AU",
-    "Australia/Victoria": "AU",
-    "Australia/West": "AU",
-    "Australia/Yancowinna": "AU",
-    "Brazil/Acre": "BR",
-    "Brazil/DeNoronha": "BR",
-    "Brazil/East": "BR",
-    "Brazil/West": "BR",
-    "Canada/Atlantic": "CA",
-    "Canada/Central": "CA",
-    "Canada/Eastern": "CA",
-    "Canada/Mountain": "CA",
-    "Canada/Newfoundland": "CA",
-    "Canada/Pacific": "CA",
-    "Canada/Saskatchewan": "CA",
-    "Canada/Yukon": "CA",
-    "Chile/Continental": "CL",
-    "Chile/EasterIsland": "CL",
-    "Cuba": "CU",
-    "Egypt": "EG",
-    "Eire": "IE",
-    "Europe/Amsterdam": "NL",
-    "Europe/Andorra": "AD",
-    "Europe/Astrakhan": "RU",
-    "Europe/Athens": "GR",
-    "Europe/Belfast": "GB",
-    "Europe/Belgrade": "RS",
-    "Europe/Berlin": "DE",
-    "Europe/Bratislava": "SK",
-    "Europe/Brussels": "BE",
-    "Europe/Bucharest": "RO",
-    "Europe/Budapest": "HU",
-    "Europe/Busingen": "DE",
-    "Europe/Chisinau": "MD",
-    "Europe/Copenhagen": "DK",
-    "Europe/Dublin": "IE",
-    "Europe/Gibraltar": "GI",
-    "Europe/Guernsey": "GG",
-    "Europe/Helsinki": "FI",
-    "Europe/Isle_of_Man": "IM",
-    "Europe/Istanbul": "TR",
-    "Europe/Jersey": "JE",
-    "Europe/Kaliningrad": "RU",
-    "Europe/Kiev": "UA",
-    "Europe/Kirov": "RU",
-    "Europe/Kyiv": "UA",
-    "Europe/Lisbon": "PT",
-    "Europe/Ljubljana": "SI",
-    "Europe/London": "GB",
-    "Europe/Luxembourg": "LU",
-    "Europe/Madrid": "ES",
-    "Europe/Malta": "MT",
-    "Europe/Mariehamn": "AX",
-    "Europe/Minsk": "BY",
-    "Europe/Monaco": "MC",
-    "Europe/Moscow": "RU",
-    "Europe/Nicosia": "CY",
-    "Europe/Oslo": "NO",
-    "Europe/Paris": "FR",
-    "Europe/Podgorica": "ME",
-    "Europe/Prague": "CZ",
-    "Europe/Riga": "LV",
-    "Europe/Rome": "IT",
-    "Europe/Samara": "RU",
-    "Europe/San_Marino": "SM",
-    "Europe/Sarajevo": "BA",
-    "Europe/Saratov": "RU",
-    "Europe/Simferopol": "UA",
-    "Europe/Skopje": "MK",
-    "Europe/Sofia": "BG",
-    "Europe/Stockholm": "SE",
-    "Europe/Tallinn": "EE",
-    "Europe/Tirane": "AL",
-    "Europe/Tiraspol": "MD",
-    "Europe/Ulyanovsk": "RU",
-    "Europe/Uzhgorod": "UA",
-    "Europe/Vaduz": "LI",
-    "Europe/Vatican": "VA",
-    "Europe/Vienna": "AT",
-    "Europe/Vilnius": "LT",
-    "Europe/Volgograd": "RU",
-    "Europe/Warsaw": "PL",
-    "Europe/Zagreb": "HR",
-    "Europe/Zaporozhye": "UA",
-    "Europe/Zurich": "CH",
-    "GB": "GB",
-    "GB-Eire": "GB",
-    "Hongkong": "HK",
-    "Iceland": "IS",
-    "Indian/Antananarivo": "MG",
-    "Indian/Chagos": "IO",
-    "Indian/Christmas": "CX",
-    "Indian/Cocos": "CC",
-    "Indian/Comoro": "KM",
-    "Indian/Kerguelen": "TF",
-    "Indian/Mahe": "SC",
-    "Indian/Maldives": "MV",
-    "Indian/Mauritius": "MU",
-    "Indian/Mayotte": "YT",
-    "Indian/Reunion": "RE",
-    "Iran": "IR",
-    "Israel": "IL",
-    "Jamaica": "JM",
-    "Japan": "JP",
-    "Kwajalein": "MH",
-    "Libya": "LY",
-    "Mexico/BajaNorte": "MX",
-    "Mexico/BajaSur": "MX",
-    "Mexico/General": "MX",
-    "NZ": "NZ",
-    "NZ-CHAT": "NZ",
-    "Navajo": "US",
-    "PRC": "CN",
-    "Pacific/Apia": "WS",
-    "Pacific/Auckland": "NZ",
-    "Pacific/Bougainville": "PG",
-    "Pacific/Chatham": "NZ",
-    "Pacific/Chuuk": "FM",
-    "Pacific/Easter": "CL",
-    "Pacific/Efate": "VU",
-    "Pacific/Enderbury": "KI",
-    "Pacific/Fakaofo": "TK",
-    "Pacific/Fiji": "FJ",
-    "Pacific/Funafuti": "TV",
-    "Pacific/Galapagos": "EC",
-    "Pacific/Gambier": "PF",
-    "Pacific/Guadalcanal": "SB",
-    "Pacific/Guam": "GU",
-    "Pacific/Honolulu": "US",
-    "Pacific/Johnston": "US",
-    "Pacific/Kanton": "KI",
-    "Pacific/Kiritimati": "KI",
-    "Pacific/Kosrae": "FM",
-    "Pacific/Kwajalein": "MH",
-    "Pacific/Majuro": "MH",
-    "Pacific/Marquesas": "PF",
-    "Pacific/Midway": "UM",
-    "Pacific/Nauru": "NR",
-    "Pacific/Niue": "NU",
-    "Pacific/Norfolk": "NF",
-    "Pacific/Noumea": "NC",
-    "Pacific/Pago_Pago": "AS",
-    "Pacific/Palau": "PW",
-    "Pacific/Pitcairn": "PN",
-    "Pacific/Pohnpei": "FM",
-    "Pacific/Ponape": "FM",
-    "Pacific/Port_Moresby": "PG",
-    "Pacific/Rarotonga": "CK",
-    "Pacific/Saipan": "MP",
-    "Pacific/Samoa": "AS",
-    "Pacific/Tahiti": "PF",
-    "Pacific/Tarawa": "KI",
-    "Pacific/Tongatapu": "TO",
-    "Pacific/Truk": "FM",
-    "Pacific/Wake": "UM",
-    "Pacific/Wallis": "WF",
-    "Pacific/Yap": "FM",
-    "Poland": "PL",
-    "Portugal": "PT",
-    "ROC": "TW",
-    "ROK": "KR",
-    "Singapore": "SG",
-    "Turkey": "TR",
-    "US/Alaska": "US",
-    "US/Aleutian": "US",
-    "US/Arizona": "US",
-    "US/Central": "US",
-    "US/East-Indiana": "US",
-    "US/Eastern": "US",
-    "US/Hawaii": "US",
-    "US/Indiana-Starke": "US",
-    "US/Michigan": "US",
-    "US/Mountain": "US",
-    "US/Pacific": "US",
-    "US/Samoa": "AS",
-    "W-SU": "RU"
-  };
+    /* ---------- helpers ---------- */
+    function pad(n){return String(n).padStart(2,'0')}
+    function load(k,def){try{var v=JSON.parse(localStorage.getItem(k));return v==null?def:v}catch(e){return def}}
+    function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
+    function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show')},1800)}
+    function copy(text){navigator.clipboard.writeText(text).then(function(){toast('Copied: '+text)},function(){toast('Copy failed')})}
+    function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 
-  const META_FALLBACK = { country: "", flag: "", currency: "—", phone: "—" };
-
-  function getTimeZoneMeta(tz) {
-    const code = TZ_TO_COUNTRY[tz];
-    if (!code) return META_FALLBACK;
-    const cMeta = COUNTRY_META[code];
-    if (!cMeta) return META_FALLBACK;
-    return { country: code, flag: cMeta.flag, currency: cMeta.currency, phone: cMeta.phone };
-  }
-
-  // ---------- Helpers ----------
-  const pad = n => n.toString().padStart(2, "0");
-
-  const formatLocal = d =>
-    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
-    `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-
-  const formatUTC = d =>
-    `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ` +
-    `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
-
-  function getAbbrev(tz, date) {
-    const options = {
-      timeZone: tz,
-      hour12: false,
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      timeZoneName: "short"
-    };
-    const parts = new Intl.DateTimeFormat("en-US", options).formatToParts(date);
-    const namePart = parts.find(p => p.type === "timeZoneName");
-    return namePart ? namePart.value : "";
-  }
-
-  function getOffsetHours(tz, date) {
-    const utc = new Date(date.toLocaleString("en-US", { timeZone: "UTC" }));
-    const local = new Date(date.toLocaleString("en-US", { timeZone: tz }));
-    const diffMin = (local - utc) / 60000;
-    return diffMin / 60;
-  }
-
-  function debounce(fn, delay) {
-    let t;
-    return (...args) => {
-      clearTimeout(t);
-      t = setTimeout(() => fn(...args), delay);
-    };
-  }
-
-  // ---------- DOM refs ----------
-  const body = document.body;
-
-  const localSpan = document.getElementById("local-time");
-  const localAbbrSpan = document.getElementById("local-abbr");
-  const utcSpan = document.getElementById("utc-time");
-  const epochSpan = document.getElementById("epoch-time");
-
-  const tbody = document.getElementById("zones-tbody");
-  const noRow = document.getElementById("no-results-row");
-  const searchInput = document.getElementById("search");
-  const formatToggle = document.getElementById("format-toggle");
-
-  const pinnedWrapper = document.getElementById("pinned-wrapper");
-  const pinnedGrid = document.getElementById("pinned-grid");
-  const clearPinsBtn = document.getElementById("clear-pins");
-
-  const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-
-  let use24h = true;
-  let zones = [];
-  let zoneRows = [];
-
-  const formatters = new Map();
-  let lastOffsetUpdateKey = "";
-
-  const PIN_KEY = "worldclock_pins";
-  let pinnedSet = new Set();
-
-  // ---------- pinned ----------
-  function loadPinned() {
-    try {
-      const stored = localStorage.getItem(PIN_KEY);
-      if (stored) {
-        const arr = JSON.parse(stored);
-        if (Array.isArray(arr)) {
-          pinnedSet = new Set(arr);
-        }
-      }
-    } catch (_) {}
-  }
-
-  function savePinned() {
-    localStorage.setItem(PIN_KEY, JSON.stringify(Array.from(pinnedSet)));
-  }
-
-  function renderPinned(now) {
-    if (pinnedSet.size === 0) {
-      pinnedWrapper.style.display = "none";
-      pinnedGrid.innerHTML = "";
-      return;
+    function fmtTime(d,tz){
+      var o={hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:hour12};
+      if(tz)o.timeZone=tz;
+      return new Intl.DateTimeFormat('en-GB',o).format(d).replace(/\s?(am|pm)/i,function(m){return ' '+m.trim().toUpperCase()});
     }
-    pinnedWrapper.style.display = "flex";
-    pinnedGrid.innerHTML = "";
-
-    const fragment = document.createDocumentFragment();
-
-    Array.from(pinnedSet).forEach(tz => {
-      const meta = getTimeZoneMeta(tz);
-      const fmt = formatters.get(tz);
-      const timeStr = fmt ? fmt.format(now) : "";
-      const offsetHours = getOffsetHours(tz, now);
-      const sign = offsetHours >= 0 ? "+" : "-";
-      const abs = Math.abs(offsetHours);
-      const offsetLabel = `${sign}${pad(Math.floor(abs))}:${pad(Math.round((abs % 1) * 60))}`;
-
-      const card = document.createElement("div");
-      card.className = "clock-card pinned-card";
-
-      const title = document.createElement("div");
-      title.className = "pinned-zone";
-      title.textContent = `${meta.flag || ""} ${tz}${meta.country ? " · " + meta.country : ""}`;
-
-      const time = document.createElement("div");
-      time.className = "pinned-time";
-      time.textContent = timeStr;
-
-      const metaEl = document.createElement("div");
-      metaEl.className = "pinned-meta";
-      metaEl.textContent = `UTC${offsetLabel} · ${meta.currency || "—"} · ${meta.phone || "—"}`;
-
-      card.appendChild(title);
-      card.appendChild(time);
-      card.appendChild(metaEl);
-
-      fragment.appendChild(card);
-    });
-
-    pinnedGrid.appendChild(fragment);
-  }
-
-  function togglePinned(tz) {
-    if (pinnedSet.has(tz)) {
-      pinnedSet.delete(tz);
-    } else {
-      pinnedSet.add(tz);
+    function isoWeek(d){
+      var dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+      var day=(dt.getUTCDay()+6)%7; dt.setUTCDate(dt.getUTCDate()-day+3);
+      var ft=new Date(Date.UTC(dt.getUTCFullYear(),0,4));
+      var fday=(ft.getUTCDay()+6)%7; ft.setUTCDate(ft.getUTCDate()-fday+3);
+      return 1+Math.round((dt-ft)/(7*864e5));
     }
-    savePinned();
-    updatePinButtons();
-    renderPinned(new Date());
-  }
-
-  function updatePinButtons() {
-    zoneRows.forEach(z => {
-      const isPinned = pinnedSet.has(z.tz);
-      if (isPinned) {
-        z.pinBtn.classList.add("pinned");
-        z.pinBtn.textContent = "📌";
-      } else {
-        z.pinBtn.classList.remove("pinned");
-        z.pinBtn.textContent = "📍";
-      }
-    });
-  }
-
-  function clearPinned() {
-    if (pinnedSet.size === 0) return;
-    pinnedSet.clear();
-    savePinned();
-    updatePinButtons();
-    renderPinned(new Date());
-  }
-
-  clearPinsBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    clearPinned();
-  });
-
-  // ---------- zones & table ----------
-  function initZones() {
-    try {
-      zones = Intl.supportedValuesOf("timeZone");
-    } catch (e) {
-      zones = [
-        "Africa/Cairo",
-        "America/Mexico_City",
-        "America/New_York",
-        "Asia/Tokyo",
-        "Europe/London",
-        "Pacific/Auckland"
-      ];
+    function dayOfYear(d){return Math.floor((d-new Date(d.getFullYear(),0,0))/864e5)}
+    function isLeap(y){return (y%4===0&&y%100!==0)||y%400===0}
+    function zoneOffsetMin(tz,date){
+      var p=new Intl.DateTimeFormat('en-US',{timeZone:tz,hour12:false,year:'numeric',month:'2-digit',day:'2-digit',
+        hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(date)
+        .reduce(function(a,x){a[x.type]=x.value;return a},{});
+      var h=p.hour==='24'?0:+p.hour;
+      var asUTC=Date.UTC(+p.year,+p.month-1,+p.day,h,+p.minute,+p.second);
+      return Math.round((asUTC-date.getTime())/60000);
     }
+    function offLabel(min){var s=min<0?'-':'+';min=Math.abs(min);return 'UTC'+s+pad(Math.floor(min/60))+':'+pad(min%60)}
+    function relLabel(min){if(min===0)return 'same as you';var s=min<0?'-':'+';var m=Math.abs(min);
+      var h=Math.floor(m/60),mm=m%60;return s+h+(mm?':'+pad(mm):'')+'h vs you'}
 
-    if (noRow) {
-      tbody.removeChild(noRow);
+    /* ---------- tabs ---------- */
+    // Zones & Countdowns are popups over the always-on Now screen.
+    function openZones(){ $('zonesModal').hidden=false; renderZones(); }
+    function closeZones(){ $('zonesModal').hidden=true; }
+    function openCountdowns(){ $('countdownsModal').hidden=false; renderCd(); tickCd(); }
+    function closeCountdowns(){ $('countdownsModal').hidden=true; }
+    $('openZones').addEventListener('click',openZones);
+    $('closeZones').addEventListener('click',closeZones);
+    $('zonesBackdrop').addEventListener('click',closeZones);
+    $('openCountdowns').addEventListener('click',openCountdowns);
+    $('closeCountdowns').addEventListener('click',closeCountdowns);
+    $('cdBackdrop').addEventListener('click',closeCountdowns);
+
+    /* ---------- NOW ---------- */
+    var readDefs=[
+      {lbl:'UTC',        get:function(d){return fmtTime(d,'UTC')}},
+      {lbl:'Unix epoch', get:function(d){return String(Math.floor(d.getTime()/1000))}},
+      {lbl:'Epoch (ms)', get:function(d){return String(d.getTime())}},
+    ];
+    function buildReadouts(){
+      $('readGrid').innerHTML=readDefs.map(function(r,i){
+        return '<div class="read" data-i="'+i+'"><span class="cp">click to copy</span>'+
+               '<div class="lbl">'+r.lbl+'</div><div class="val" id="read-'+i+'">—</div></div>';
+      }).join('');
+      $('readGrid').onclick=function(e){var c=e.target.closest('.read');if(!c)return;copy($('read-'+c.dataset.i).textContent)};
     }
+    function tickNow(d){
+      $('nowTime').textContent=fmtTime(d);
+      var wd=new Intl.DateTimeFormat('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(d);
+      var abbr=new Intl.DateTimeFormat('en-US',{timeZoneName:'short'}).formatToParts(d).find(function(p){return p.type==='timeZoneName'});
+      var tz=(Intl.DateTimeFormat().resolvedOptions().timeZone||'').replace(/_/g,' ');
+      $('nowSub').innerHTML=wd+' · <span class="abbr">'+tz+(abbr?' ('+abbr.value+')':'')+'</span>';
+      readDefs.forEach(function(r,i){var el=$('read-'+i);if(el)el.textContent=r.get(d)});
+    }
+    $('fmtToggle').onclick=function(){hour12=!hour12;localStorage.setItem(LS_FMT,hour12?'12':'24');
+      $('fmtToggle').textContent=hour12?'24-hour':'12-hour';renderZones();renderCd();tickCd();tickNow(new Date());renderNowCities(new Date(),true)};
+    $('fmtToggle').textContent=hour12?'24-hour':'12-hour';
 
-    const fragment = document.createDocumentFragment();
-    zoneRows = [];
+    /* ---------- ZONES ---------- */
+    var ALLZONES=(typeof Intl.supportedValuesOf==='function')?Intl.supportedValuesOf('timeZone'):
+      ['UTC','America/New_York','America/Chicago','America/Denver','America/Los_Angeles','America/Mexico_City',
+       'America/Sao_Paulo','Europe/London','Europe/Paris','Europe/Berlin','Europe/Madrid','Europe/Moscow',
+       'Africa/Cairo','Africa/Johannesburg','Asia/Dubai','Asia/Kolkata','Asia/Bangkok','Asia/Shanghai',
+       'Asia/Tokyo','Asia/Seoul','Asia/Singapore','Australia/Sydney','Pacific/Auckland','Pacific/Honolulu'];
+    var offCache={};
+    function offOf(tz,d){ if(offCache[tz]===undefined) offCache[tz]=zoneOffsetMin(tz,d); return offCache[tz]; }
+    function cityOf(tz){var p=tz.split('/');return (p[p.length-1]||tz).replace(/_/g,' ')}
+    function regionOf(tz){var p=tz.split('/');return p.length>1?p[0].replace(/_/g,' '):'—'}
+    var pins=load(LS_PINS,['America/Los_Angeles','America/New_York','Europe/London','Europe/Paris','Asia/Dubai','Asia/Singapore','Asia/Tokyo','Australia/Sydney']).filter(function(z){return ALLZONES.indexOf(z)>=0});
+    var zoneQuery='', activeRegion='all';
 
-    zones.forEach(tz => {
-      const tr = document.createElement("tr");
+    // Divide zones by geographic region (map region), from the IANA prefix.
+    var REGIONS=[
+      {id:'all',label:'All'},{id:'Africa',label:'Africa'},{id:'America',label:'Americas'},
+      {id:'Asia',label:'Asia'},{id:'Europe',label:'Europe'},{id:'Australia',label:'Australia'},
+      {id:'Pacific',label:'Pacific'},{id:'Atlantic',label:'Atlantic'},{id:'Indian',label:'Indian'},
+      {id:'Antarctica',label:'Antarctica'},{id:'Etc',label:'Other'}
+    ];
+    var AMER={US:1,Canada:1,Brazil:1,Mexico:1,Chile:1,Cuba:1,Jamaica:1};
+    var CONTS=['Africa','America','Asia','Europe','Australia','Pacific','Atlantic','Indian','Antarctica'];
+    function regionKey(tz){var p=tz.split('/')[0];
+      if(CONTS.indexOf(p)>=0)return p; if(AMER[p])return 'America'; return 'Etc';}
 
-      const tdPin = document.createElement("td");
-      tdPin.className = "pin-cell";
-      const pinBtn = document.createElement("button");
-      pinBtn.type = "button";
-      pinBtn.className = "pin-btn";
-      pinBtn.textContent = "📍";
-      pinBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        togglePinned(tz);
+    function isPinned(tz){return pins.indexOf(tz)>=0}
+    function togglePin(tz){var i=pins.indexOf(tz);if(i<0)pins.push(tz);else pins.splice(i,1);save(LS_PINS,pins);
+      renderPinnedStrips();
+      if(!$('zonesModal').hidden){ drawMap('tz'); renderZoneList(); }
+      drawMap('nm'); renderNowCities(new Date(),true);}
+    function zoneCard(tz,d){
+      var off=offOf(tz,d), loc=-new Date().getTimezoneOffset();
+      var h=+new Intl.DateTimeFormat('en-US',{timeZone:tz,hour:'2-digit',hour12:false}).format(d)%24;
+      var night=(h<6||h>=19);
+      return '<div class="zone'+(isPinned(tz)?' pinned':'')+'" data-tz="'+tz+'">'+
+        '<button class="pin'+(isPinned(tz)?' on':'')+'" data-pin="'+tz+'" title="Pin / unpin">'+(isPinned(tz)?'★':'☆')+'</button>'+
+        '<div class="z-top"><span class="z-daynight">'+(night?'🌙':'☀️')+'</span>'+
+        '<span class="z-city">'+esc(cityOf(tz))+'</span></div>'+
+        '<div class="z-time">'+fmtTime(d,tz)+'</div>'+
+        '<div class="z-meta"><span>'+offLabel(off)+'</span><span class="z-rel">'+relLabel(off-loc)+'</span></div>'+
+        '<div class="z-region">'+esc(regionOf(tz))+'</div></div>';
+    }
+    // Pinned zones mirrored at the top of BOTH Now and Zones.
+    function renderPinnedStrips(d){
+      d=d||new Date();
+      $('pinCount').textContent=pins.length;
+      $('pinnedGrid').innerHTML=pins.map(function(tz){return zoneCard(tz,d)}).join('');
+    }
+    // Now "Selected cities": update times in place (keeps the marquee running); rebuild only when the pin set changes.
+    var nowPinSig=null, mqReduce=(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    function updateNowCityTimes(d){
+      d=d||new Date(); var track=$('nowPinned'); if(!track)return;
+      track.querySelectorAll('.zone').forEach(function(el){
+        var tz=el.dataset.tz; if(!tz)return;
+        var t=el.querySelector('.z-time'); if(t)t.textContent=fmtTime(d,tz);
+        var dn=el.querySelector('.z-daynight');
+        if(dn){var h=+new Intl.DateTimeFormat('en-US',{timeZone:tz,hour:'2-digit',hour12:false}).format(d)%24;dn.textContent=(h<6||h>=19)?'🌙':'☀️';}
       });
-      tdPin.appendChild(pinBtn);
-
-      const tdZone = document.createElement("td");
-      const tdAbbr = document.createElement("td");
-      const tdOffset = document.createElement("td");
-      const tdDst = document.createElement("td");
-      const tdTime = document.createElement("td");
-      const tdCurr = document.createElement("td");
-      const tdCall = document.createElement("td");
-
-      const meta = getTimeZoneMeta(tz);
-      const flagSpan = meta.flag ? `<span class="zone-flag">${meta.flag}</span>` : "";
-      const isoSpan = meta.country ? `<span class="zone-iso">${meta.country}</span>` : "";
-      tdZone.innerHTML = `${flagSpan}<span class="zone-name">${tz}</span>${isoSpan}`;
-
-      tdCurr.textContent = meta.currency || "—";
-      tdCall.textContent = meta.phone || "—";
-
-      tr.appendChild(tdPin);
-      tr.appendChild(tdZone);
-      tr.appendChild(tdAbbr);
-      tr.appendChild(tdOffset);
-      tr.appendChild(tdDst);
-      tr.appendChild(tdTime);
-      tr.appendChild(tdCurr);
-      tr.appendChild(tdCall);
-
-      fragment.appendChild(tr);
-
-      zoneRows.push({
-        tz,
-        row: tr,
-        pinBtn,
-        abbrCell: tdAbbr,
-        offsetCell: tdOffset,
-        dstCell: tdDst,
-        timeCell: tdTime,
-        currencyCell: tdCurr,
-        callCell: tdCall
+    }
+    function setupCityMarquee(one){
+      var wrap=$('nowPinnedWrap'), mq=$('cityMarquee'), track=$('nowPinned'), side=document.querySelector('.nd-side');
+      if(!mq||!track)return;
+      mq.classList.remove('scrolling'); mq.style.overflowY=''; mq.style.height=''; track.style.animationDuration=''; track.style.removeProperty('--mqshift');
+      track.innerHTML=one;                                       // single set → measure natural height
+      var hero=side&&side.querySelector('.now-hero'), k=wrap.querySelector('.kicker'), avail=0;
+      if(side) avail=side.clientHeight-(hero?hero.offsetHeight:0)-(k?k.offsetHeight:0)-30;  // remaining space below the clock card
+      var singleH=track.scrollHeight;
+      if(!(avail>90 && singleH>avail+4)) return;                 // everything fits — natural height, no scroll
+      mq.style.height=avail+'px';                                // bound to the clock+map column height
+      if(mqReduce){ mq.style.overflowY='auto'; return; }         // reduced-motion → scrollable list, no animation
+      var unit=singleH+8;                                        // one set + one grid gap = seamless repeat unit
+      track.innerHTML=one+one;                                   // duplicate for the endless upward loop
+      track.style.setProperty('--mqshift',unit+'px');
+      track.style.animationDuration=Math.max(10,Math.round(unit/26))+'s';
+      mq.classList.add('scrolling');
+    }
+    function renderNowCities(d,force){
+      var wrap=$('nowPinnedWrap'); if(!wrap)return;
+      var has=pins.length>0; wrap.hidden=!has;
+      if(!has){nowPinSig=null;return;}
+      d=d||new Date(); var sig=pins.join(',');
+      if(force||sig!==nowPinSig){ nowPinSig=sig; setupCityMarquee(pins.map(function(tz){return zoneCard(tz,d)}).join('')); }
+      else updateNowCityTimes(d);
+    }
+    function renderRegionBar(){
+      var counts={}; ALLZONES.forEach(function(tz){var k=regionKey(tz);counts[k]=(counts[k]||0)+1});
+      $('regionBar').innerHTML=REGIONS.filter(function(r){return r.id==='all'||counts[r.id]}).map(function(r){
+        var n=r.id==='all'?ALLZONES.length:counts[r.id];
+        return '<button class="region-chip'+(activeRegion===r.id?' active':'')+'" data-region="'+r.id+'">'+r.label+'<span class="rc-n">'+n+'</span></button>';
+      }).join('');
+    }
+    function renderZoneList(){
+      var d=new Date(), q=zoneQuery.toLowerCase();
+      var filtered=ALLZONES.filter(function(tz){
+        if(activeRegion!=='all'&&regionKey(tz)!==activeRegion)return false;
+        return !q||tz.toLowerCase().indexOf(q)>=0||cityOf(tz).toLowerCase().indexOf(q)>=0;});
+      $('zoneEmpty').hidden=filtered.length>0;
+      var groups={}; filtered.forEach(function(tz){var k=regionKey(tz);(groups[k]=groups[k]||[]).push(tz)});
+      var CAP=60, html='';
+      REGIONS.forEach(function(r){
+        if(r.id==='all')return; var g=groups[r.id]; if(!g||!g.length)return;
+        var shown=g.slice(0,CAP);
+        html+='<div class="divider">'+r.label+' <span style="color:var(--text-muted)">'+g.length+(g.length>CAP?' · showing '+CAP+', refine search':'')+'</span></div>';
+        html+='<div class="zgrid">'+shown.map(function(tz){return zoneCard(tz,d)}).join('')+'</div>';
       });
-    });
-
-    tbody.appendChild(fragment);
-    if (noRow) {
-      tbody.appendChild(noRow);
+      $('zoneGroups').innerHTML=html;
     }
-
-    rebuildFormatters();
-    refreshOffsets(new Date());
-    updatePinButtons();
-  }
-
-  function rebuildFormatters() {
-    formatters.clear();
-    zones.forEach(tz => {
-      formatters.set(
-        tz,
-        new Intl.DateTimeFormat(undefined, {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: !use24h,
-          timeZone: tz
-        })
-      );
-    });
-  }
-
-  function refreshOffsets(now) {
-    const key = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}-${now.getUTCHours()}`;
-    if (key === lastOffsetUpdateKey) return;
-    lastOffsetUpdateKey = key;
-
-    const jan = new Date(now.getFullYear(), 0, 15, 12, 0, 0);
-    const jul = new Date(now.getFullYear(), 6, 15, 12, 0, 0);
-
-    zoneRows.forEach(z => {
-      const abbrev = getAbbrev(z.tz, now);
-      const offsetHours = getOffsetHours(z.tz, now);
-      const sign = offsetHours >= 0 ? "+" : "-";
-      const abs = Math.abs(offsetHours);
-      const displayOffset = `${sign}${abs.toFixed(2)}`;
-      const offsetSearch = `${sign}${pad(Math.floor(abs))}`;
-
-      z.abbrCell.textContent = abbrev;
-      z.offsetCell.textContent = displayOffset;
-
-      let dstLabel = "No DST";
-      try {
-        const janOff = getOffsetHours(z.tz, jan);
-        const julOff = getOffsetHours(z.tz, jul);
-        if (Math.abs(janOff - julOff) < 1e-6) {
-          dstLabel = "No DST";
-        } else {
-          const maxOff = Math.max(janOff, julOff);
-          if (Math.abs(offsetHours - maxOff) < 1e-6) {
-            dstLabel = "DST on";
-          } else {
-            dstLabel = "DST off";
-          }
-        }
-      } catch (e) {
-        dstLabel = "—";
+    /* ---- day/night world map (equirectangular) ---- */
+    var ZC={"Europe/Andorra":[42.5,1.52],"Asia/Dubai":[25.3,55.3],"Asia/Kabul":[34.52,69.2],"Europe/Tirane":[41.33,19.83],"Asia/Yerevan":[40.18,44.5],"Antarctica/Casey":[-66.28,110.52],"Antarctica/Davis":[-68.58,77.97],"Antarctica/Mawson":[-67.6,62.88],"Antarctica/Palmer":[-64.8,-64.1],"Antarctica/Rothera":[-67.57,-68.13],"Antarctica/Troll":[-72.01,2.54],"Antarctica/Vostok":[-78.4,106.9],"America/Argentina/Buenos_Aires":[-34.6,-58.45],"America/Argentina/Cordoba":[-31.4,-64.18],"America/Argentina/Salta":[-24.78,-65.42],"America/Argentina/Jujuy":[-24.18,-65.3],"America/Argentina/Tucuman":[-26.82,-65.22],"America/Argentina/Catamarca":[-28.47,-65.78],"America/Argentina/La_Rioja":[-29.43,-66.85],"America/Argentina/San_Juan":[-31.53,-68.52],"America/Argentina/Mendoza":[-32.88,-68.82],"America/Argentina/San_Luis":[-33.32,-66.35],"America/Argentina/Rio_Gallegos":[-51.63,-69.22],"America/Argentina/Ushuaia":[-54.8,-68.3],"Pacific/Pago_Pago":[-14.27,-170.7],"Europe/Vienna":[48.22,16.33],"Australia/Lord_Howe":[-31.55,159.08],"Antarctica/Macquarie":[-54.5,158.95],"Australia/Hobart":[-42.88,147.32],"Australia/Melbourne":[-37.82,144.97],"Australia/Sydney":[-33.87,151.22],"Australia/Broken_Hill":[-31.95,141.45],"Australia/Brisbane":[-27.47,153.03],"Australia/Lindeman":[-20.27,149.0],"Australia/Adelaide":[-34.92,138.58],"Australia/Darwin":[-12.47,130.83],"Australia/Perth":[-31.95,115.85],"Australia/Eucla":[-31.72,128.87],"Asia/Baku":[40.38,49.85],"America/Barbados":[13.1,-59.62],"Asia/Dhaka":[23.72,90.42],"Europe/Brussels":[50.83,4.33],"Europe/Sofia":[42.68,23.32],"Atlantic/Bermuda":[32.28,-64.77],"America/La_Paz":[-16.5,-68.15],"America/Noronha":[-3.85,-32.42],"America/Belem":[-1.45,-48.48],"America/Fortaleza":[-3.72,-38.5],"America/Recife":[-8.05,-34.9],"America/Araguaina":[-7.2,-48.2],"America/Maceio":[-9.67,-35.72],"America/Bahia":[-12.98,-38.52],"America/Sao_Paulo":[-23.53,-46.62],"America/Campo_Grande":[-20.45,-54.62],"America/Cuiaba":[-15.58,-56.08],"America/Santarem":[-2.43,-54.87],"America/Porto_Velho":[-8.77,-63.9],"America/Boa_Vista":[2.82,-60.67],"America/Manaus":[-3.13,-60.02],"America/Eirunepe":[-6.67,-69.87],"America/Rio_Branco":[-9.97,-67.8],"Asia/Thimphu":[27.47,89.65],"Europe/Minsk":[53.9,27.57],"America/Belize":[17.5,-88.2],"America/St_Johns":[47.57,-52.72],"America/Halifax":[44.65,-63.6],"America/Glace_Bay":[46.2,-59.95],"America/Moncton":[46.1,-64.78],"America/Goose_Bay":[53.33,-60.42],"America/Toronto":[43.65,-79.38],"America/Iqaluit":[63.73,-68.47],"America/Winnipeg":[49.88,-97.15],"America/Resolute":[74.7,-94.83],"America/Rankin_Inlet":[62.82,-92.08],"America/Regina":[50.4,-104.65],"America/Swift_Current":[50.28,-107.83],"America/Edmonton":[53.55,-113.47],"America/Cambridge_Bay":[69.11,-105.05],"America/Inuvik":[68.35,-133.72],"America/Vancouver":[49.27,-123.12],"America/Dawson_Creek":[55.77,-120.23],"America/Fort_Nelson":[58.8,-122.7],"America/Whitehorse":[60.72,-135.05],"America/Dawson":[64.07,-139.42],"Europe/Zurich":[47.38,8.53],"Africa/Abidjan":[5.32,-4.03],"Pacific/Rarotonga":[-21.23,-159.77],"America/Santiago":[-33.45,-70.67],"America/Coyhaique":[-45.57,-72.07],"America/Punta_Arenas":[-53.15,-70.92],"Pacific/Easter":[-27.15,-109.43],"Asia/Shanghai":[31.23,121.47],"Asia/Urumqi":[43.8,87.58],"America/Bogota":[4.6,-74.08],"America/Costa_Rica":[9.93,-84.08],"America/Havana":[23.13,-82.37],"Atlantic/Cape_Verde":[14.92,-23.52],"Asia/Nicosia":[35.17,33.37],"Asia/Famagusta":[35.12,33.95],"Europe/Prague":[50.08,14.43],"Europe/Berlin":[52.5,13.37],"America/Santo_Domingo":[18.47,-69.9],"Africa/Algiers":[36.78,3.05],"America/Guayaquil":[-2.17,-79.83],"Pacific/Galapagos":[-0.9,-89.6],"Europe/Tallinn":[59.42,24.75],"Africa/Cairo":[30.05,31.25],"Africa/El_Aaiun":[27.15,-13.2],"Europe/Madrid":[40.4,-3.68],"Africa/Ceuta":[35.88,-5.32],"Atlantic/Canary":[28.1,-15.4],"Europe/Helsinki":[60.17,24.97],"Pacific/Fiji":[-18.13,178.42],"Atlantic/Stanley":[-51.7,-57.85],"Pacific/Kosrae":[5.32,162.98],"Atlantic/Faroe":[62.02,-6.77],"Atlantic/Reykjavik":[64.13,-21.9],"Europe/Paris":[48.87,2.33],"Europe/London":[51.51,-0.13],"Asia/Tbilisi":[41.72,44.82],"America/Cayenne":[4.93,-52.33],"Europe/Gibraltar":[36.13,-5.35],"America/Nuuk":[64.18,-51.73],"America/Danmarkshavn":[76.77,-18.67],"America/Scoresbysund":[70.48,-21.97],"America/Thule":[76.57,-68.78],"Europe/Athens":[37.97,23.72],"Atlantic/South_Georgia":[-54.27,-36.53],"America/Guatemala":[14.63,-90.52],"Pacific/Guam":[13.47,144.75],"Africa/Bissau":[11.85,-15.58],"Africa/Dakar":[14.72,-17.47],"America/Guyana":[6.8,-58.17],"Asia/Hong_Kong":[22.28,114.15],"America/Tegucigalpa":[14.1,-87.22],"America/Port-au-Prince":[18.53,-72.33],"Europe/Budapest":[47.5,19.08],"Asia/Jakarta":[-6.17,106.8],"Asia/Pontianak":[-0.03,109.33],"Asia/Makassar":[-5.12,119.4],"Asia/Jayapura":[-2.53,140.7],"Europe/Dublin":[53.33,-6.25],"Asia/Jerusalem":[31.78,35.22],"Asia/Kolkata":[22.53,88.37],"Indian/Chagos":[-7.33,72.42],"Asia/Baghdad":[33.35,44.42],"Asia/Tehran":[35.67,51.43],"Europe/Rome":[41.9,12.48],"America/Jamaica":[17.97,-76.79],"Asia/Amman":[31.95,35.93],"Asia/Tokyo":[35.65,139.74],"Africa/Nairobi":[-1.28,36.82],"Asia/Bishkek":[42.9,74.6],"Pacific/Tarawa":[1.42,173.0],"Pacific/Kanton":[-2.78,-171.72],"Pacific/Kiritimati":[1.87,-157.33],"Asia/Pyongyang":[39.02,125.75],"Asia/Seoul":[37.55,126.97],"Asia/Almaty":[43.25,76.95],"Asia/Qyzylorda":[44.8,65.47],"Asia/Qostanay":[53.2,63.62],"Asia/Aqtobe":[50.28,57.17],"Asia/Aqtau":[44.52,50.27],"Asia/Atyrau":[47.12,51.93],"Asia/Oral":[51.22,51.35],"Asia/Beirut":[33.88,35.5],"Asia/Colombo":[6.93,79.85],"Africa/Monrovia":[6.3,-10.78],"Europe/Vilnius":[54.68,25.32],"Europe/Riga":[56.95,24.1],"Africa/Tripoli":[32.9,13.18],"Africa/Casablanca":[33.65,-7.58],"Europe/Chisinau":[47.0,28.83],"Pacific/Kwajalein":[9.08,167.33],"Asia/Yangon":[16.78,96.17],"Asia/Ulaanbaatar":[47.92,106.88],"Asia/Hovd":[48.02,91.65],"Asia/Macau":[22.2,113.54],"America/Martinique":[14.6,-61.08],"Europe/Malta":[35.9,14.52],"Indian/Mauritius":[-20.17,57.5],"Indian/Maldives":[4.17,73.5],"America/Mexico_City":[19.4,-99.15],"America/Cancun":[21.08,-86.77],"America/Merida":[20.97,-89.62],"America/Monterrey":[25.67,-100.32],"America/Matamoros":[25.83,-97.5],"America/Chihuahua":[28.63,-106.08],"America/Ciudad_Juarez":[31.73,-106.48],"America/Ojinaga":[29.57,-104.42],"America/Mazatlan":[23.22,-106.42],"America/Bahia_Banderas":[20.8,-105.25],"America/Hermosillo":[29.07,-110.97],"America/Tijuana":[32.53,-117.02],"Asia/Kuching":[1.55,110.33],"Africa/Maputo":[-25.97,32.58],"Africa/Windhoek":[-22.57,17.1],"Pacific/Noumea":[-22.27,166.45],"Pacific/Norfolk":[-29.05,167.97],"Africa/Lagos":[6.45,3.4],"America/Managua":[12.15,-86.28],"Asia/Kathmandu":[27.72,85.32],"Pacific/Nauru":[-0.52,166.92],"Pacific/Niue":[-19.02,-169.92],"Pacific/Auckland":[-36.87,174.77],"Pacific/Chatham":[-43.95,-176.55],"America/Panama":[8.97,-79.53],"America/Lima":[-12.05,-77.05],"Pacific/Tahiti":[-17.53,-149.57],"Pacific/Marquesas":[-9.0,-139.5],"Pacific/Gambier":[-23.13,-134.95],"Pacific/Port_Moresby":[-9.5,147.17],"Pacific/Bougainville":[-6.22,155.57],"Asia/Manila":[14.59,120.97],"Asia/Karachi":[24.87,67.05],"Europe/Warsaw":[52.25,21.0],"America/Miquelon":[47.05,-56.33],"Pacific/Pitcairn":[-25.07,-130.08],"America/Puerto_Rico":[18.47,-66.11],"Asia/Gaza":[31.5,34.47],"Asia/Hebron":[31.53,35.09],"Europe/Lisbon":[38.72,-9.13],"Atlantic/Madeira":[32.63,-16.9],"Atlantic/Azores":[37.73,-25.67],"Pacific/Palau":[7.33,134.48],"America/Asuncion":[-25.27,-57.67],"Asia/Qatar":[25.28,51.53],"Europe/Bucharest":[44.43,26.1],"Europe/Belgrade":[44.83,20.5],"Europe/Kaliningrad":[54.72,20.5],"Europe/Moscow":[55.76,37.62],"Europe/Simferopol":[44.95,34.1],"Europe/Kirov":[58.6,49.65],"Europe/Volgograd":[48.73,44.42],"Europe/Astrakhan":[46.35,48.05],"Europe/Saratov":[51.57,46.03],"Europe/Ulyanovsk":[54.33,48.4],"Europe/Samara":[53.2,50.15],"Asia/Yekaterinburg":[56.85,60.6],"Asia/Omsk":[55.0,73.4],"Asia/Novosibirsk":[55.03,82.92],"Asia/Barnaul":[53.37,83.75],"Asia/Tomsk":[56.5,84.97],"Asia/Novokuznetsk":[53.75,87.12],"Asia/Krasnoyarsk":[56.02,92.83],"Asia/Irkutsk":[52.27,104.33],"Asia/Chita":[52.05,113.47],"Asia/Yakutsk":[62.0,129.67],"Asia/Khandyga":[62.66,135.55],"Asia/Vladivostok":[43.17,131.93],"Asia/Ust-Nera":[64.56,143.23],"Asia/Magadan":[59.57,150.8],"Asia/Sakhalin":[46.97,142.7],"Asia/Srednekolymsk":[67.47,153.72],"Asia/Kamchatka":[53.02,158.65],"Asia/Anadyr":[64.75,177.48],"Asia/Riyadh":[24.63,46.72],"Pacific/Guadalcanal":[-9.53,160.2],"Africa/Khartoum":[15.6,32.53],"Asia/Singapore":[1.28,103.85],"America/Paramaribo":[5.83,-55.17],"Africa/Juba":[4.85,31.62],"Africa/Sao_Tome":[0.33,6.73],"America/El_Salvador":[13.7,-89.2],"Asia/Damascus":[33.5,36.3],"America/Grand_Turk":[21.47,-71.13],"Africa/Ndjamena":[12.12,15.05],"Asia/Bangkok":[13.75,100.52],"Asia/Dushanbe":[38.58,68.8],"Pacific/Fakaofo":[-9.37,-171.23],"Asia/Dili":[-8.55,125.58],"Asia/Ashgabat":[37.95,58.38],"Africa/Tunis":[36.8,10.18],"Pacific/Tongatapu":[-21.13,-175.2],"Europe/Istanbul":[41.02,28.97],"Asia/Taipei":[25.05,121.5],"Europe/Kyiv":[50.43,30.52],"America/New_York":[40.71,-74.01],"America/Detroit":[42.33,-83.05],"America/Kentucky/Louisville":[38.25,-85.76],"America/Kentucky/Monticello":[36.83,-84.85],"America/Indiana/Indianapolis":[39.77,-86.16],"America/Indiana/Vincennes":[38.68,-87.53],"America/Indiana/Winamac":[41.05,-86.6],"America/Indiana/Marengo":[38.38,-86.34],"America/Indiana/Petersburg":[38.49,-87.28],"America/Indiana/Vevay":[38.75,-85.07],"America/Chicago":[41.85,-87.65],"America/Indiana/Tell_City":[37.95,-86.76],"America/Indiana/Knox":[41.3,-86.62],"America/Menominee":[45.11,-87.61],"America/North_Dakota/Center":[47.12,-101.3],"America/North_Dakota/New_Salem":[46.84,-101.41],"America/North_Dakota/Beulah":[47.26,-101.78],"America/Denver":[39.74,-104.98],"America/Boise":[43.61,-116.2],"America/Phoenix":[33.45,-112.07],"America/Los_Angeles":[34.05,-118.24],"America/Anchorage":[61.22,-149.9],"America/Juneau":[58.3,-134.42],"America/Sitka":[57.18,-135.3],"America/Metlakatla":[55.13,-131.58],"America/Yakutat":[59.55,-139.73],"America/Nome":[64.5,-165.41],"America/Adak":[51.88,-176.66],"Pacific/Honolulu":[21.31,-157.86],"America/Montevideo":[-34.91,-56.21],"Asia/Samarkand":[39.67,66.8],"Asia/Tashkent":[41.33,69.3],"America/Caracas":[10.5,-66.93],"Asia/Ho_Chi_Minh":[10.75,106.67],"Pacific/Efate":[-17.67,168.42],"Pacific/Apia":[-13.83,-171.73],"Africa/Johannesburg":[-26.25,28.0]};
+    function proj(lat,lon){return [(lon+180)/360*1000,(90-lat)/180*500]}
+    function markerXY(tz){var c=ZC[tz]; if(c)return proj(c[0],c[1]); return proj(0, offOf(tz,new Date())/4);}
+    // Major world cities shown as background reference dots (click to pin). Every entry must be a key in ZC.
+    var CITYPTS=['America/Anchorage','America/Los_Angeles','America/Vancouver','America/Denver','America/Phoenix','America/Chicago',
+      'America/Mexico_City','America/Winnipeg','America/New_York','America/Toronto','America/Havana','America/Guatemala','America/Panama',
+      'America/Bogota','America/Lima','America/Caracas','America/La_Paz','America/Santiago','America/Argentina/Buenos_Aires',
+      'America/Montevideo','America/Sao_Paulo','America/Manaus','America/Halifax','Pacific/Honolulu',
+      'Atlantic/Reykjavik','Europe/Lisbon','Europe/Dublin','Europe/London','Europe/Madrid','Europe/Paris','Europe/Brussels',
+      'Europe/Zurich','Europe/Rome','Europe/Berlin','Europe/Prague','Europe/Vienna','Europe/Warsaw','Europe/Budapest',
+      'Europe/Belgrade','Europe/Athens','Europe/Bucharest','Europe/Sofia','Europe/Kyiv','Europe/Helsinki','Europe/Tallinn',
+      'Europe/Riga','Europe/Vilnius','Europe/Minsk','Europe/Istanbul','Europe/Moscow','Asia/Yekaterinburg','Asia/Novosibirsk',
+      'Asia/Krasnoyarsk','Asia/Vladivostok','Africa/Casablanca','Africa/Algiers','Africa/Tunis','Africa/Lagos','Africa/Abidjan',
+      'Africa/Cairo','Africa/Khartoum','Africa/Nairobi','Africa/Johannesburg','Africa/Maputo','Asia/Jerusalem','Asia/Amman',
+      'Asia/Beirut','Asia/Baghdad','Asia/Riyadh','Asia/Dubai','Asia/Tehran','Asia/Baku','Asia/Tbilisi','Asia/Yerevan',
+      'Asia/Ashgabat','Asia/Tashkent','Asia/Almaty','Asia/Karachi','Asia/Kabul','Asia/Kolkata','Asia/Kathmandu','Asia/Colombo',
+      'Asia/Dhaka','Asia/Yangon','Asia/Bangkok','Asia/Ho_Chi_Minh','Asia/Jakarta','Asia/Singapore','Asia/Manila','Asia/Hong_Kong',
+      'Asia/Shanghai','Asia/Taipei','Asia/Seoul','Asia/Tokyo','Asia/Ulaanbaatar','Australia/Perth','Australia/Darwin',
+      'Australia/Adelaide','Australia/Brisbane','Australia/Sydney','Australia/Melbourne','Pacific/Port_Moresby','Pacific/Guam',
+      'America/Costa_Rica','America/Managua','America/El_Salvador','America/Santo_Domingo','America/Guayaquil',
+      'America/Asuncion','America/Paramaribo','America/Port-au-Prince','America/Tegucigalpa','America/Nuuk',
+      'Africa/Tripoli','Africa/Windhoek','Africa/Dakar','Asia/Qatar','Asia/Damascus','Asia/Bishkek','Asia/Dushanbe',
+      'Asia/Pyongyang','Asia/Macau','Asia/Samarkand','Europe/Chisinau','Europe/Kaliningrad','Indian/Maldives',
+      'Indian/Mauritius','Pacific/Apia','Pacific/Tahiti','Pacific/Tongatapu','Pacific/Noumea','Pacific/Nauru',
+      'Pacific/Auckland','Pacific/Fiji'].filter(function(tz){return ZC[tz];});
+    // Low-precision solar position (NOAA-style): declination + equation of time,
+    // so the terminator and subsolar point track the real sun (analemma included).
+    function subsolar(d){
+      var rad=Math.PI/180;
+      var n=d.getTime()/86400000 - 10957.5;            // days since J2000.0 (2000-01-01 12:00 UTC)
+      var L=(280.460 + 0.9856474*n)%360; if(L<0)L+=360;// sun mean longitude
+      var g=((357.528 + 0.9856003*n)%360)*rad;         // sun mean anomaly
+      var lambda=(L + 1.915*Math.sin(g) + 0.020*Math.sin(2*g))*rad; // ecliptic longitude
+      var eps=(23.439 - 0.0000004*n)*rad;              // obliquity of ecliptic
+      var declDeg=Math.asin(Math.sin(eps)*Math.sin(lambda))/rad;
+      var alpha=Math.atan2(Math.cos(eps)*Math.sin(lambda),Math.cos(lambda))/rad; // right ascension
+      var eot=L-alpha; while(eot>180)eot-=360; while(eot<-180)eot+=360;          // equation of time (deg)
+      var utcH=d.getUTCHours()+d.getUTCMinutes()/60+d.getUTCSeconds()/3600;
+      var sunlon=-15*(utcH-12)-eot; while(sunlon>180)sunlon-=360; while(sunlon<-180)sunlon+=360;
+      var decl=declDeg*rad; if(Math.abs(decl)<0.002)decl=(decl<0?-1:1)*0.002;
+      return {decl:decl, declDeg:declDeg, sunlon:sunlon};
+    }
+    // Draw a map into the SVG whose layer ids share prefix p ('tz' = zones, 'nm' = now).
+    function drawMap(p,d){
+      d=d||new Date(); var s=subsolar(d), pts='';
+      for(var lon=-180;lon<=180;lon+=1){                        // 1° steps → smoother, more accurate terminator
+        var H=(lon-s.sunlon)*Math.PI/180;
+        var lat=Math.atan(-Math.cos(H)/Math.tan(s.decl))*180/Math.PI;
+        var q=proj(lat,lon); pts+=(lon===-180?'M':'L')+q[0].toFixed(1)+' '+q[1].toFixed(1);
       }
-      z.dstCell.textContent = dstLabel;
-
-      z.row.dataset.zoneText = z.tz.toLowerCase();
-      z.row.dataset.abbrText = abbrev.toLowerCase();
-      z.row.dataset.offsetText = offsetSearch;
-    });
-  }
-
-  function updateClockRowTimes(now) {
-    zoneRows.forEach(z => {
-      const fmt = formatters.get(z.tz);
-      z.timeCell.textContent = fmt ? fmt.format(now) : "";
-    });
-  }
-
-  // ---------- search / filter ----------
-  function applyFilter() {
-    const q = searchInput.value.trim().toLowerCase();
-    let visible = 0;
-
-    zoneRows.forEach(z => {
-      const zone = z.row.dataset.zoneText || "";
-      const abbr = z.row.dataset.abbrText || "";
-      const offset = z.row.dataset.offsetText || "";
-
-      const match =
-        !q ||
-        zone.includes(q) ||
-        abbr.includes(q) ||
-        offset.includes(q);
-
-      z.row.style.display = match ? "" : "none";
-      if (match) visible++;
-    });
-
-    if (noRow) {
-      noRow.style.display = visible === 0 ? "" : "none";
+      var poleY=s.decl>0?500:0;
+      $(p+'Night').setAttribute('d', pts+'L1000 '+poleY+'L0 '+poleY+'Z');
+      var slon=s.sunlon>180?s.sunlon-360:(s.sunlon<-180?s.sunlon+360:s.sunlon), sx=proj(s.declDeg,slon);
+      $(p+'Sun').innerHTML='<circle class="tz-sun" cx="'+sx[0].toFixed(1)+'" cy="'+sx[1].toFixed(1)+'" r="5"/>';
+      $(p+'Cities').innerHTML=CITYPTS.map(function(tz){
+        if(isPinned(tz))return '';
+        var xy=markerXY(tz), x=xy[0].toFixed(1), y=xy[1].toFixed(1);
+        return '<g class="tz-cmk" data-pin="'+tz+'"><title>'+esc(cityOf(tz))+' — '+esc(tz)+' · click to pin</title>'+
+          '<circle class="tz-hit" cx="'+x+'" cy="'+y+'" r="9"/>'+
+          '<circle class="tz-city" cx="'+x+'" cy="'+y+'" r="2.4"/></g>';
+      }).join('');
+      // pinned markers — greedy vertical de-overlap so nearby labels don't collide
+      var placed=[];
+      $(p+'Markers').innerHTML=pins.map(function(tz){
+        var xy=markerXY(tz), x=xy[0], y=xy[1], right=x>905;
+        var lx=x+(right?-9:9), ly=y+4, guard=0, moved=true;
+        while(moved&&guard<48){moved=false;guard++;
+          for(var i=0;i<placed.length;i++){var pl=placed[i];
+            if(Math.abs(pl.lx-lx)<120 && Math.abs(pl.ly-ly)<11.5){ly=pl.ly+11.5;moved=true;}}
+        }
+        placed.push({lx:lx,ly:ly});
+        var lead=(ly-(y+4)>6)?'<line class="tz-lead" x1="'+x.toFixed(1)+'" y1="'+y.toFixed(1)+'" x2="'+lx.toFixed(1)+'" y2="'+(ly-4).toFixed(1)+'"/>':'';
+        return '<g class="tz-mk" data-pin="'+tz+'"><title>'+esc(cityOf(tz))+' — '+esc(tz)+' · click to unpin</title>'+
+          '<circle class="tz-hit" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="12"/>'+lead+
+          '<circle class="tz-glow" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="7"/>'+
+          '<circle class="tz-dot" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.4"/>'+
+          '<text class="tz-lbl" x="'+lx.toFixed(1)+'" y="'+ly.toFixed(1)+'" text-anchor="'+(right?'end':'start')+'">'+esc(cityOf(tz))+'</text></g>';
+      }).join('');
     }
-  }
+    function renderMap(d){ drawMap('tz',d); drawMap('nm',d); }
+    // hour-zone meridians — one vertical line per hour of UTC offset (−12…+12), static.
+    var showHours=load(LS_HOURS,false);
+    function hourLinesHTML(){
+      var h='';
+      for(var off=-12;off<=12;off++){
+        var x=proj(0,off*15)[0].toFixed(1);
+        h+='<line class="hl'+(off===0?' hl0':'')+'" x1="'+x+'" y1="0" x2="'+x+'" y2="500"/>';
+        h+='<text class="hll" x="'+x+'" y="12" text-anchor="middle">'+(off>0?'+'+off:off)+'</text>';
+      }
+      return h;
+    }
+    function renderHourLines(){var h=hourLinesHTML();['tzHourLines','nmHourLines'].forEach(function(id){var g=$(id);if(g)g.innerHTML=h;});}
+    function applyHours(){
+      ['tzHourLines','nmHourLines'].forEach(function(id){var g=$(id);if(g)g.style.display=showHours?'':'none';});
+      var b=$('toggleHours'); if(b){b.classList.toggle('active',showHours);b.setAttribute('aria-pressed',showHours?'true':'false');}
+    }
+    function renderZones(){ renderPinnedStrips(); renderMap(); renderZoneList(); }
+    function zonesClick(e){var b=e.target.closest('[data-pin]');if(b)togglePin(b.dataset.pin)}
+    $('tzMarkers').addEventListener('click',zonesClick);
+    $('tzCities').addEventListener('click',zonesClick);
+    if($('nmMarkers')) $('nmMarkers').addEventListener('click',zonesClick);
+    if($('nmCities')) $('nmCities').addEventListener('click',zonesClick);
+    $('toggleHours').addEventListener('click',function(){showHours=!showHours;save(LS_HOURS,showHours);applyHours();});
+    renderHourLines(); applyHours();
+    $('zoneGroups').addEventListener('click',zonesClick);
+    $('pinnedGrid').addEventListener('click',zonesClick);
+    $('nowPinned').addEventListener('click',zonesClick);
+    $('regionBar').addEventListener('click',function(e){var b=e.target.closest('[data-region]');if(!b)return;
+      activeRegion=b.dataset.region;renderRegionBar();renderZoneList();});
+    $('zoneSearch').addEventListener('input',function(){zoneQuery=this.value.trim();renderZoneList()});
+    $('clearPins').onclick=function(){pins=[];save(LS_PINS,pins);renderPinnedStrips();renderMap();renderZoneList()};
+    // zone-search popup
+    function openZonePopup(){$('zonePopup').hidden=false;renderRegionBar();renderZoneList();var s=$('zoneSearch');if(s){s.focus();s.select();}}
+    function closeZonePopup(){$('zonePopup').hidden=true;}
+    $('openZoneSearch').addEventListener('click',openZonePopup);
+    $('closeZoneSearch').addEventListener('click',closeZonePopup);
+    $('zpBackdrop').addEventListener('click',closeZonePopup);
+    document.addEventListener('keydown',function(e){
+      if(e.key!=='Escape')return;
+      if(!$('zonePopup').hidden){closeZonePopup();return;}
+      if(!$('zonesModal').hidden){closeZones();return;}
+      if(!$('countdownsModal').hidden){closeCountdowns();return;}
+    });
 
-  const debouncedFilter = debounce(applyFilter, 200);
-  searchInput.addEventListener("input", () => {
-    debouncedFilter();
-  });
+    /* ---------- COUNTDOWNS ---------- */
+    var BUILTINS=[
+      {id:'ny',  name:'New Year 2027',      date:'2027-01-01'},
+      {id:'sol', name:'December Solstice',   date:'2026-12-21'},
+      {id:'hw',  name:'Halloween',           date:'2026-10-31'},
+      {id:'equ', name:'September Equinox',   date:'2026-09-22'},
+      /* imported from the SimpleCountdown project */
+      {id:'sc1',name:"Python 2.7 End of Life",date:'2020-01-01'},
+      {id:'sc2',name:"openSUSE Leap 15.5 EOL",date:'2024-12-31'},
+      {id:'sc3',name:"Windows 10 End of Support",date:'2025-10-14'},
+      {id:'sc4',name:"Fedora 42 End of Life",date:'2026-05-27'},
+      {id:'sc5',name:"Debian 11 (Bullseye) LTS End",date:'2026-08-31'},
+      {id:'sc6',name:"Python 3.10 & 3.11 End of Life",date:'2026-10-31'},
+      {id:'sc7',name:"Fedora 43 End of Life",date:'2026-12-09'},
+      {id:'sc8',name:"Ubuntu 22.04 LTS End of Life",date:'2027-04-01',time:'01:01'},
+      {id:'sc9',name:"Node.js 22 LTS End of Life",date:'2027-04-30'},
+      {id:'sc10',name:"CentOS Stream 9 End of Life",date:'2027-05-31'},
+      {id:'sc11',name:"Fedora 44 End of Life",date:'2027-06-02'},
+      {id:'sc12',name:"Fedora 45 End of Life",date:'2027-12-02'},
+      {id:'sc13',name:"Debian 12 (Bookworm) LTS End",date:'2028-06-30'},
+      {id:'sc14',name:"Windows Server 2019 End of Support",date:'2029-01-09'},
+      {id:'sc15',name:"Linux Mint 22 End of Life",date:'2029-04-01'},
+      {id:'sc16',name:"Ubuntu 24.04 LTS End of Life",date:'2029-04-01'},
+      {id:'sc17',name:"RHEL 8 End of Life",date:'2029-05-31'},
+      {id:'sc18',name:"CentOS Stream 10 End of Life",date:'2030-01-01'},
+      {id:'sc19',name:"Debian 13 (Trixie) LTS End",date:'2030-06-30'},
+      {id:'sc20',name:"Ubuntu 26.04 LTS End of Life",date:'2031-04-30'},
+      {id:'sc21',name:"AlmaLinux 9 End of Life",date:'2032-05-31'},
+      {id:'sc22',name:"Rocky Linux 9 End of Life",date:'2032-05-31'},
+      {id:'sc23',name:"RHEL 9 End of Life",date:'2032-05-31'},
+      {id:'sc24',name:"RHEL 10 End of Life",date:'2035-05-31'},
+      {id:'sc25',name:"GDPR Takes Effect",date:'2018-05-25'},
+      {id:'sc26',name:"EU AI Act Enters Into Force",date:'2024-08-01'},
+      {id:'sc27',name:"NIS2 Directive Transposition Deadline",date:'2024-10-17'},
+      {id:'sc28',name:"NIST PQC Standards Finalized",date:'2024-12-01'},
+      {id:'sc29',name:"EU Data Act Takes Effect",date:'2025-09-12'},
+      {id:'sc30',name:"India DPDP Act Deadline",date:'2025-12-31'},
+      {id:'sc31',name:"EU Digital Identity Wallet Mandatory",date:'2026-01-01'},
+      {id:'sc32',name:"EU AI Act: High-Risk Rules Apply",date:'2026-08-02'},
+      {id:'sc33',name:"EU Cyber Resilience Act Applies",date:'2027-12-11'},
+      {id:'sc34',name:"Morris Worm Released",date:'1988-11-02'},
+      {id:'sc35',name:"Stuxnet Discovered",date:'2010-06-17'},
+      {id:'sc36',name:"Heartbleed Bug Disclosure",date:'2014-04-07'},
+      {id:'sc37',name:"WannaCry Ransomware Attack",date:'2017-05-12'},
+      {id:'sc38',name:"NotPetya Attack",date:'2017-06-27'},
+      {id:'sc39',name:"Equifax Breach Announced",date:'2017-09-07'},
+      {id:'sc40',name:"Spectre & Meltdown Disclosed",date:'2018-01-03'},
+      {id:'sc41',name:"SolarWinds Hack Disclosed",date:'2020-12-13'},
+      {id:'sc42',name:"Log4Shell (Log4j) Disclosed",date:'2021-12-09'},
+      {id:'sc43',name:"xz Utils Backdoor Discovered",date:'2024-03-29'},
+      {id:'sc44',name:"CrowdStrike Global IT Outage",date:'2024-07-19'},
+      {id:'sc45',name:"Year 2000 Problem (Y2K)",date:'2000-01-01'},
+      {id:'sc46',name:"GPS Week Number Rollover",date:'2019-04-06'},
+      {id:'sc47',name:"First Image of a Black Hole",date:'2019-04-10'},
+      {id:'sc48',name:"James Webb Space Telescope Launch",date:'2021-12-25',time:'12:20'},
+      {id:'sc49',name:"NASA Voyager 2 Power Down",date:'2025-10-01'},
+      {id:'sc50',name:"ISS Planned Deorbit",date:'2031-01-01'},
+      {id:'sc51',name:"End of Leap Seconds (ITU)",date:'2035-01-01'},
+      {id:'sc52',name:"Year 2036 NTP Rollover",date:'2036-02-07',time:'06:28'},
+      {id:'sc53',name:"Epoch Time Death (32-bit)",date:'2038-01-19',time:'03:14'},
+      {id:'sc54',name:"Antarctic Treaty Expiration Review",date:'2048-01-01'},
+      {id:'sc55',name:"Start of the Year 2100",date:'2100-01-01'},
+      {id:'sc56',name:"Launch of ARPANET",date:'1969-10-29'},
+      {id:'sc57',name:"Unix Epoch Start",date:'1970-01-01'},
+      {id:'sc58',name:"First Email Sent",date:'1971-10-29'},
+      {id:'sc59',name:"Microsoft Founded",date:'1975-04-04'},
+      {id:'sc60',name:"Apple Founded",date:'1976-04-01'},
+      {id:'sc61',name:"World Wide Web Proposal",date:'1989-03-12'},
+      {id:'sc62',name:"First Website Online",date:'1991-08-06'},
+      {id:'sc63',name:"Linux Kernel First Released",date:'1991-09-17'},
+      {id:'sc64',name:"Amazon Founded",date:'1994-07-05'},
+      {id:'sc65',name:"Windows 95 Released",date:'1995-08-24'},
+      {id:'sc66',name:"Deep Blue Defeats Kasparov",date:'1997-05-11'},
+      {id:'sc67',name:"Google Founded",date:'1998-09-04'},
+      {id:'sc68',name:"Wikipedia Launched",date:'2001-01-15'},
+      {id:'sc69',name:"Facebook Launched",date:'2004-02-04'},
+      {id:'sc70',name:"Git First Release",date:'2005-04-07'},
+      {id:'sc71',name:"GitHub Launched",date:'2008-04-10'},
+      {id:'sc72',name:"Bitcoin Genesis Block",date:'2009-01-03',time:'18:15'},
+      {id:'sc73',name:"First Wayland Release",date:'2012-10-23',time:'23:26'},
+      {id:'sc74',name:"AlphaGo Defeats Lee Sedol",date:'2016-03-15'},
+      {id:'sc75',name:"Launch of ChatGPT",date:'2022-11-30'},
+      {id:'sc76',name:"IBM RAMAC (First Hard Drive)",date:'1956-09-13'},
+      {id:'sc77',name:"Intel 4004 Released",date:'1971-11-15'},
+      {id:'sc78',name:"Apple II Released",date:'1977-06-10'},
+      {id:'sc79',name:"IBM PC Released",date:'1981-08-12'},
+      {id:'sc80',name:"Commodore 64 Launch",date:'1982-08-01'},
+      {id:'sc81',name:"Apple Macintosh Released",date:'1984-01-24'},
+      {id:'sc82',name:"NVIDIA GeForce 256 (First GPU)",date:'1999-10-11'},
+      {id:'sc83',name:"First iPhone Release",date:'2007-06-29'},
+      {id:'sc84',name:"iPad Released",date:'2010-04-03'},
+      {id:'sc85',name:"Raspberry Pi 1 Launch",date:'2012-02-29'},
+      {id:'sc86',name:"Apple Silicon M1 Unveiled",date:'2020-11-10'},
+      {id:'sc87',name:"First Video Game (Tennis for Two)",date:'1958-10-18'},
+      {id:'sc88',name:"Pong Arcade Release",date:'1972-11-29'},
+      {id:'sc89',name:"Pac-Man Released",date:'1980-05-22'},
+      {id:'sc90',name:"Tetris Created",date:'1984-06-06'},
+      {id:'sc91',name:"Super Mario Bros. Released",date:'1985-09-13'},
+      {id:'sc92',name:"The Legend of Zelda Released",date:'1986-02-21'},
+      {id:'sc93',name:"DOOM Released",date:'1993-12-10'},
+      {id:'sc94',name:"Pokémon Red/Green Released (Japan)",date:'1996-02-27'},
+      {id:'sc95',name:"World of Warcraft Launched",date:'2004-11-23'},
+      {id:'sc96',name:"Minecraft Initial Release",date:'2009-05-17'},
+      {id:'sc97',name:"Nintendo Switch Released",date:'2017-03-03'},
+      {id:'scArch',name:"Arch Linux End of Life",ts:Date.now()+60000},
+      {id:'sc41k',name:"The 41st Millennium Begins",ts:Date.UTC(40000,0,1)}
+    ];
+    var userEvents=load(LS_EVENTS,[]);
+    var hidden=load(LS_HIDDEN,[]);
+    var cdQuery='';
 
-  // ---------- 12/24h toggle ----------
-  formatToggle.addEventListener("change", () => {
-    use24h = formatToggle.checked;
-    rebuildFormatters();
-    const now = new Date();
-    updateClockRowTimes(now);
-    renderPinned(now);
-  });
+    // import shared events from ?c=
+    (function(){
+      try{
+        var p=new URLSearchParams(location.search).get('c');
+        if(p){var arr=JSON.parse(decodeURIComponent(escape(atob(p))));
+          if(Array.isArray(arr)){userEvents=arr;save(LS_EVENTS,userEvents);
+            history.replaceState({},'',location.origin+location.pathname);}}
+      }catch(e){}
+    })();
 
-  // ---------- main tick ----------
-  function tick() {
-    const now = new Date();
+    function targetOf(ev){return ev.ts!=null?ev.ts:new Date(ev.date+'T'+(ev.time||'00:00')).getTime()}
+    function events(){
+      var bi=BUILTINS.filter(function(b){return hidden.indexOf(b.id)<0}).map(function(b){
+        return {id:b.id,name:b.name,date:b.date,time:b.time,ts:b.ts,_bi:true}});
+      return bi.concat(userEvents);
+    }
+    function whenLabel(ev){
+      var d=new Date(targetOf(ev));
+      var s=new Intl.DateTimeFormat('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'}).format(d);
+      return ev.time? s+' · '+fmtTime(d):s;
+    }
+    function breakdown(ms){var s=Math.floor(Math.abs(ms)/1000);
+      return{d:Math.floor(s/86400),h:Math.floor(s%86400/3600),m:Math.floor(s%3600/60),s:s%60}}
+    function remText(ms){var b=breakdown(ms);var t=(b.d?b.d+'d ':'')+pad(b.h)+':'+pad(b.m)+':'+pad(b.s);return ms<0?t+' ago':t}
 
-    localSpan.textContent = formatLocal(now);
-    utcSpan.textContent = formatUTC(now);
-    epochSpan.textContent = Math.floor(now.getTime() / 1000);
+    function renderCd(){
+      var now=Date.now();
+      var all=events();
+      var list=all.filter(function(e){return !cdQuery||e.name.toLowerCase().indexOf(cdQuery.toLowerCase())>=0});
+      $('cdCount').textContent=all.length;
+      var up=list.filter(function(e){return targetOf(e)>now}).sort(function(a,b){return targetOf(a)-targetOf(b)});
+      var hero=up[0];
+      $('cdHero').hidden=!hero;
+      if(hero){$('cdHero').dataset.t=targetOf(hero);$('heroName').textContent=hero.name;$('heroWhen').textContent=whenLabel(hero);}
+      list.sort(function(a,b){var ta=targetOf(a),tb=targetOf(b),ua=ta>now,ub=tb>now;
+        if(ua!==ub)return ua?-1:1; return ua?ta-tb:tb-ta;});
+      $('cdEmpty').hidden=list.length>0;
+      $('cdGrid').innerHTML=list.map(function(e){
+        var t=targetOf(e),passed=t<=now;
+        return '<div class="cd-card'+(passed?' passed':'')+'">'+
+          '<button class="c-x" data-x="'+esc(e.id||e.name)+'" data-bi="'+(e._bi?1:0)+'" title="'+(e._bi?'Hide':'Remove')+'">✕</button>'+
+          '<div class="c-name">'+esc(e.name)+'</div>'+
+          '<div class="c-when">'+whenLabel(e)+'</div>'+
+          '<div class="c-rem" data-t="'+t+'">'+remText(t-now)+'</div>'+
+          '<span class="pill '+(e._bi?'bi':(passed?'pa':'up'))+'">'+(e._bi?'built-in':(passed?'passed':'upcoming'))+'</span>'+
+          '</div>';
+      }).join('');
+    }
+    // Highlighted upcoming countdowns shown in the Now dashboard (right column).
+    function renderNowCountdowns(){
+      var el=$('nowCountdowns'); if(!el)return;
+      var now=Date.now();
+      var up=events().filter(function(e){return targetOf(e)>now}).sort(function(a,b){return targetOf(a)-targetOf(b)}).slice(0,4);
+      if(!up.length){el.innerHTML='<div class="muted-note">No upcoming countdowns yet — add one in the Countdowns tab.</div>';return;}
+      el.innerHTML=up.map(function(e){var t=targetOf(e);
+        return '<div class="nc-card"><div class="nc-name">'+esc(e.name)+'</div>'+
+          '<div class="nc-when">'+whenLabel(e)+'</div>'+
+          '<div class="nc-rem" data-t="'+t+'">'+remText(t-now)+'</div></div>';
+      }).join('');
+    }
+    function tickCd(){
+      var now=Date.now();
+      if(!$('cdHero').hidden){var t=+$('cdHero').dataset.t;var b=breakdown(t-now);
+        $('heroClock').innerHTML=[['Days',b.d],['Hours',b.h],['Mins',b.m],['Secs',b.s]].map(function(u){
+          return '<div class="cd-unit"><div class="n">'+(u[0]==='Days'?u[1]:pad(u[1]))+'</div><div class="u">'+u[0]+'</div></div>'}).join('');}
+      document.querySelectorAll('#cdGrid .c-rem').forEach(function(el){el.textContent=remText(+el.dataset.t-now)});
+    }
+    $('cdAdd').addEventListener('submit',function(e){
+      e.preventDefault();
+      var name=$('evName').value.trim(),date=$('evDate').value,time=$('evTime').value;
+      if(!name||!date)return;
+      userEvents.push({id:'u'+Date.now(),name:name,date:date,time:time||''});
+      save(LS_EVENTS,userEvents);$('evName').value='';$('evDate').value='';$('evTime').value='';
+      renderCd();tickCd();toast('Added “'+name+'”');
+    });
+    $('cdGrid').addEventListener('click',function(e){
+      var x=e.target.closest('[data-x]');if(!x)return;
+      if(x.dataset.bi==='1'){hidden.push(x.dataset.x);save(LS_HIDDEN,hidden);}
+      else{userEvents=userEvents.filter(function(ev){return (ev.id||ev.name)!==x.dataset.x});save(LS_EVENTS,userEvents);}
+      renderCd();tickCd();
+    });
+    $('cdSearch').addEventListener('input',function(){cdQuery=this.value.trim();renderCd();tickCd()});
+    $('shareBtn').onclick=function(){
+      if(!userEvents.length){toast('Add an event first to share');return;}
+      var enc=btoa(unescape(encodeURIComponent(JSON.stringify(userEvents))));
+      copy(location.origin+location.pathname+'?c='+encodeURIComponent(enc));
+    };
 
-    const localAbbrev = getAbbrev(LOCAL_TZ, now);
-    localAbbrSpan.textContent = `${LOCAL_TZ} · ${localAbbrev}`;
-
-    refreshOffsets(now);
-    updateClockRowTimes(now);
-    renderPinned(now);
-  }
-
-  // ---------- boot ----------
-  (function init() {
-    loadPinned();
-    initZones();
-    applyFilter();
-    tick();
-    setInterval(tick, 1000);
+    /* ---------- main loop ---------- */
+    function loop(){
+      var d=new Date();
+      tickNow(d);
+      renderPinnedStrips(d);   // keep the Now + Zones pinned strips live
+      drawMap('nm',d); renderNowCountdowns(); renderNowCities(d);
+      if(!$('zonesModal').hidden){ drawMap('tz',d); renderZoneList(); }
+      tickCd();
+    }
+    buildReadouts();
+    tickNow(new Date());
+    renderRegionBar();
+    renderZones();
+    drawMap('nm'); renderNowCountdowns(); renderNowCities(new Date(),true);
+    renderCd(); tickCd();
+    window.addEventListener('resize',function(){ renderNowCities(new Date(),true); if(!$('zonesModal').hidden) drawMap('tz'); });
+    setInterval(loop,1000);
   })();
-</script>
-<script src="carino-navbar.js" data-app="World Clock" defer></script>
+  </script>
 </body>
 </html>
