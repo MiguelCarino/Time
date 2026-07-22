@@ -21,3 +21,7 @@ Three sections:
 
 Everything persists in `localStorage` (format, pinned zones, your events). No
 server, no tracking. Absorbs the former **SimpleCountdown** app (`countdown.`).
+
+## License
+
+Licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0-or-later) — see [LICENSE](LICENSE). Copyright © 2026 Miguel Carino.
