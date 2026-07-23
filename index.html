@@ -113,11 +113,24 @@
     .city-marquee.scrolling:hover #nowPinned{animation-play-state:paused}
     @keyframes cityscroll{from{transform:translateY(0)}to{transform:translateY(calc(-1 * var(--mqshift,50%)))}}
     @media (prefers-reduced-motion: reduce){ .city-marquee.scrolling #nowPinned{animation:none} }
-    /* markets left, countdowns right — one shared row, each half wraps its own cards */
+    /* markets left, countdowns right — one shared row, one card tall; when a half
+       overflows, its cards drift left in an endless loop (horizontal twin of the
+       Selected-cities marquee). Hover pauses; reduced motion scrolls instead. */
     .now-below{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;margin-top:26px}
     .now-cd-row{min-width:0}
     .now-cd-row .kicker{margin-bottom:12px}
-    .nc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+    .h-marquee{position:relative;overflow:hidden}
+    .h-marquee::before,.h-marquee::after{content:"";position:absolute;top:0;bottom:0;width:30px;pointer-events:none;z-index:1;opacity:0;transition:.2s}
+    .h-marquee::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
+    .h-marquee::after{right:0;background:linear-gradient(90deg,transparent,var(--bg))}
+    .h-marquee.scrolling::before,.h-marquee.scrolling::after{opacity:1}
+    .nc-grid{display:flex;gap:12px;align-items:stretch}
+    .nc-grid>*{flex:0 0 230px;min-width:0}
+    .nc-grid .muted-note{flex:1 1 auto}
+    .h-marquee.scrolling .nc-grid{animation-name:rowscroll;animation-timing-function:linear;animation-iteration-count:infinite}
+    .h-marquee.scrolling:hover .nc-grid{animation-play-state:paused}
+    @keyframes rowscroll{from{transform:translateX(0)}to{transform:translateX(calc(-1 * var(--hshift,50%)))}}
+    @media (prefers-reduced-motion: reduce){ .h-marquee.scrolling .nc-grid{animation:none} }
     .nc-card{background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:11px 13px}
     .nc-name{font-weight:700;font-size:.9rem}
     .nc-when{font-family:var(--mono);font-size:.6rem;color:var(--text-muted);margin-top:2px}
@@ -325,11 +338,11 @@
       <div class="now-below">
         <div class="now-mk-row">
           <div class="kicker" title="Nominal session hours — public holidays are not accounted for">Stock market openings</div>
-          <div id="nowMarkets" class="nc-grid"></div>
+          <div class="h-marquee" id="mkMarquee"><div id="nowMarkets" class="nc-grid"></div></div>
         </div>
         <div class="now-cd-row">
           <div class="kicker">Highlighted countdowns</div>
-          <div id="nowCountdowns" class="nc-grid"></div>
+          <div class="h-marquee" id="cdMarquee"><div id="nowCountdowns" class="nc-grid"></div></div>
         </div>
       </div>
     </section>
@@ -777,19 +790,39 @@
       while(nd===0||nd===6){days++;nd=(nd+1)%7;}
       return {cls:'pa',txt:'Closed · opens in '+mkDur(days*1440-min+s[0][0])};
     }
+    // Horizontal marquee (markets / countdowns rows): sibling of setupCityMarquee.
+    // One card set → measure; if wider than the row, duplicate it and drift left
+    // one full set per loop. Cards carry data-i so every copy updates in place —
+    // rebuilding each tick would restart the animation and the row would stutter.
+    function setupRowMarquee(mq,track,one){
+      mq.classList.remove('scrolling'); mq.style.overflowX='';
+      track.style.animationDuration=''; track.style.removeProperty('--hshift');
+      track.innerHTML=one;                                       // single set → measure natural width
+      var singleW=track.scrollWidth, avail=mq.clientWidth;
+      if(!(avail>60 && singleW>avail+4)) return;                 // everything fits — static row
+      if(mqReduce){ mq.style.overflowX='auto'; return; }         // reduced-motion → scrollable row
+      var unit=singleW+12;                                       // one set + one flex gap = seamless repeat unit
+      track.innerHTML=one+one;
+      track.style.setProperty('--hshift',unit+'px');
+      track.style.animationDuration=Math.max(14,Math.round(unit/28))+'s';
+      mq.classList.add('scrolling');
+    }
+    var mkBuilt=false;
     function renderMarkets(d){
-      var el=$('nowMarkets'); if(!el)return;
-      if(!el.firstChild){
-        el.innerHTML=MARKETS.map(function(m,i){
-          return '<div class="mk-card" title="'+m.n+' — nominal session hours; public holidays not accounted for">'+
+      var track=$('nowMarkets'); if(!track)return;
+      if(!mkBuilt){
+        mkBuilt=true;
+        setupRowMarquee($('mkMarquee'),track,MARKETS.map(function(m,i){
+          return '<div class="mk-card" data-i="'+i+'" title="'+m.n+' — nominal session hours; public holidays not accounted for">'+
             '<div class="mk-name">'+m.n+'</div><div class="mk-city">'+m.c+'</div>'+
-            '<div class="mk-time" id="mkt-'+i+'">—</div>'+
-            '<span class="pill pa" id="mkp-'+i+'">—</span></div>';
-        }).join('');
+            '<div class="mk-time">—</div>'+
+            '<span class="pill pa">—</span></div>';
+        }).join(''));
       }
-      MARKETS.forEach(function(m,i){
-        $('mkt-'+i).textContent=mkTime(m.z,d);
-        var st=mkStatus(m,d), p=$('mkp-'+i);
+      track.querySelectorAll('.mk-card').forEach(function(card){
+        var m=MARKETS[+card.dataset.i]; if(!m)return;
+        card.querySelector('.mk-time').textContent=mkTime(m.z,d);
+        var st=mkStatus(m,d), p=card.querySelector('.pill');
         p.textContent=st.txt; p.className='pill '+st.cls;
       });
     }
@@ -966,17 +999,25 @@
           '</div>';
       }).join('');
     }
-    // Highlighted upcoming countdowns shown in the Now dashboard (right column).
+    // Highlighted upcoming countdowns in the Now dashboard. Rebuilt only when the
+    // set itself changes (an event passes, is added or removed); every other tick
+    // just rewrites the remaining-time text so the marquee glides undisturbed.
+    var nowCdSig=null;
     function renderNowCountdowns(){
-      var el=$('nowCountdowns'); if(!el)return;
+      var track=$('nowCountdowns'); if(!track)return;
       var now=Date.now();
-      var up=events().filter(function(e){return targetOf(e)>now}).sort(function(a,b){return targetOf(a)-targetOf(b)}).slice(0,4);
-      if(!up.length){el.innerHTML='<div class="muted-note">No upcoming countdowns yet — add one in the Countdowns tab.</div>';return;}
-      el.innerHTML=up.map(function(e){var t=targetOf(e);
-        return '<div class="nc-card"><div class="nc-name">'+esc(e.name)+'</div>'+
-          '<div class="nc-when">'+whenLabel(e)+'</div>'+
-          '<div class="nc-rem" data-t="'+t+'">'+remText(t-now)+'</div></div>';
-      }).join('');
+      var up=events().filter(function(e){return targetOf(e)>now}).sort(function(a,b){return targetOf(a)-targetOf(b)}).slice(0,8);
+      var sig=up.map(function(e){return (e.id||e.name)+'@'+targetOf(e)}).join('|');
+      if(sig!==nowCdSig){
+        nowCdSig=sig;
+        var one=up.length?up.map(function(e){var t=targetOf(e);
+          return '<div class="nc-card"><div class="nc-name">'+esc(e.name)+'</div>'+
+            '<div class="nc-when">'+whenLabel(e)+'</div>'+
+            '<div class="nc-rem" data-t="'+t+'">'+remText(t-now)+'</div></div>';
+        }).join(''):'<div class="muted-note">No upcoming countdowns yet — add one in the Countdowns tab.</div>';
+        setupRowMarquee($('cdMarquee'),track,one);
+      }
+      track.querySelectorAll('.nc-rem').forEach(function(el){el.textContent=remText(+el.dataset.t-now)});
     }
     function tickCd(){
       var now=Date.now();
@@ -1021,7 +1062,11 @@
     renderZones();
     drawMap('nm'); renderMarkets(new Date()); renderNowCountdowns(); renderNowCities(new Date(),true);
     renderCd(); tickCd();
-    window.addEventListener('resize',function(){ renderNowCities(new Date(),true); if(!$('zonesModal').hidden) drawMap('tz'); });
+    window.addEventListener('resize',function(){
+      renderNowCities(new Date(),true);
+      mkBuilt=false; nowCdSig=null; renderMarkets(new Date()); renderNowCountdowns();  // re-fit the row marquees
+      if(!$('zonesModal').hidden) drawMap('tz');
+    });
     setInterval(loop,1000);
   })();
   </script>
