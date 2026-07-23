@@ -113,21 +113,23 @@
     .city-marquee.scrolling:hover #nowPinned{animation-play-state:paused}
     @keyframes cityscroll{from{transform:translateY(0)}to{transform:translateY(calc(-1 * var(--mqshift,50%)))}}
     @media (prefers-reduced-motion: reduce){ .city-marquee.scrolling #nowPinned{animation:none} }
-    .now-cd-row{margin-top:26px}
+    /* markets left, countdowns right — one shared row, each half wraps its own cards */
+    .now-below{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;margin-top:26px}
+    .now-cd-row{min-width:0}
     .now-cd-row .kicker{margin-bottom:12px}
-    .nc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+    .nc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
     .nc-card{background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:11px 13px}
     .nc-name{font-weight:700;font-size:.9rem}
     .nc-when{font-family:var(--mono);font-size:.6rem;color:var(--text-muted);margin-top:2px}
     .nc-rem{font-family:var(--mono);font-size:1.05rem;font-weight:700;color:var(--accent);margin-top:8px}
-    .now-mk-row{margin-top:26px}
+    .now-mk-row{min-width:0}
     .now-mk-row .kicker{margin-bottom:12px}
     .mk-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px}
     .mk-name{font-weight:700;font-size:.9rem}
     .mk-city{font-family:var(--mono);font-size:.6rem;color:var(--text-muted);margin-top:2px}
     .mk-time{font-family:var(--mono);font-size:1.05rem;font-weight:700;margin-top:8px}
     .tz-lead{stroke:var(--accent-dim);stroke-width:.6;opacity:.6}
-    @media (max-width:900px){ .now-dash{grid-template-columns:1fr} }
+    @media (max-width:900px){ .now-dash{grid-template-columns:1fr} .now-below{grid-template-columns:1fr} }
 
     /* ---- ZONES ---- */
     .search{position:relative;flex:1;min-width:220px}
@@ -320,13 +322,15 @@
           </div>
         </div>
       </div>
-      <div class="now-mk-row">
-        <div class="kicker" title="Nominal session hours — public holidays are not accounted for">Stock market openings</div>
-        <div id="nowMarkets" class="nc-grid"></div>
-      </div>
-      <div class="now-cd-row">
-        <div class="kicker">Highlighted countdowns</div>
-        <div id="nowCountdowns" class="nc-grid"></div>
+      <div class="now-below">
+        <div class="now-mk-row">
+          <div class="kicker" title="Nominal session hours — public holidays are not accounted for">Stock market openings</div>
+          <div id="nowMarkets" class="nc-grid"></div>
+        </div>
+        <div class="now-cd-row">
+          <div class="kicker">Highlighted countdowns</div>
+          <div id="nowCountdowns" class="nc-grid"></div>
+        </div>
       </div>
     </section>
 
