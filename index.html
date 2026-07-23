@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Time — Carino Systems</title>
-  <meta name="description" content="Local time, UTC, Unix epoch and ISO — a searchable world-clock with pinned zones, plus live countdowns you can add and share.">
+  <meta name="description" content="Local time, UTC and Unix epoch — a searchable world-clock with pinned zones, live stock-market opening hours, plus countdowns you can add and share.">
   <link rel="icon" type="image/webp" href="logo.webp">
   <link rel="stylesheet" href="fonts/carino-fonts.css">
   <style>
@@ -120,6 +120,12 @@
     .nc-name{font-weight:700;font-size:.9rem}
     .nc-when{font-family:var(--mono);font-size:.6rem;color:var(--text-muted);margin-top:2px}
     .nc-rem{font-family:var(--mono);font-size:1.05rem;font-weight:700;color:var(--accent);margin-top:8px}
+    .now-mk-row{margin-top:26px}
+    .now-mk-row .kicker{margin-bottom:12px}
+    .mk-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px}
+    .mk-name{font-weight:700;font-size:.9rem}
+    .mk-city{font-family:var(--mono);font-size:.6rem;color:var(--text-muted);margin-top:2px}
+    .mk-time{font-family:var(--mono);font-size:1.05rem;font-weight:700;margin-top:8px}
     .tz-lead{stroke:var(--accent-dim);stroke-width:.6;opacity:.6}
     @media (max-width:900px){ .now-dash{grid-template-columns:1fr} }
 
@@ -131,24 +137,25 @@
     .search .ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-family:var(--mono)}
 
     /* ---- day/night world map ---- */
-    .tzmap-wrap{position:relative;margin:0 0 6px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#070b12}
+    .tzmap-wrap{position:relative;margin:0 0 6px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0b1017}
     .tzmap{display:block;width:100%;height:auto}
-    .tz-ocean{fill:#0a0f18}
-    .tz-land{fill:#20281f;stroke:#31402d;stroke-width:.4;stroke-linejoin:round}
-    .tz-night{fill:rgba(2,5,16,.62);pointer-events:none}
+    .tz-ocean{fill:#2b3a4e}
+    .tz-land{fill:#57604a;stroke:#6b7355;stroke-width:.4;stroke-linejoin:round}
+    .tz-night{fill:rgba(4,8,20,.78);pointer-events:none}
     .tz-mk{cursor:pointer}
     .tz-glow{fill:var(--accent);opacity:.22}
     .tz-dot{fill:var(--accent);stroke:#050505;stroke-width:1.2}
     .tz-hit{fill:transparent;cursor:pointer}                 /* large invisible click target */
     .tz-cmk{cursor:pointer}
-    .tz-city{fill:#9fb1c6;stroke:#05070d;stroke-width:.7;opacity:.55;pointer-events:none;transition:fill .15s,opacity .15s,r .15s}
+    .tz-city{fill:#dce6f2;stroke:#101826;stroke-width:.7;opacity:.6;pointer-events:none;transition:fill .15s,opacity .15s,r .15s}
     .tz-cmk:hover .tz-city{opacity:1;fill:var(--accent);r:3.6}
-    /* hour-zone meridians (toggle) — one line per hour of UTC offset */
-    .tz-hours .hl{stroke:var(--accent);stroke-width:.5;opacity:.26;stroke-dasharray:3 4}
-    .tz-hours .hl0{stroke-width:.9;opacity:.5;stroke-dasharray:none}
-    .tz-hours .hll{font-family:var(--mono);font-size:9px;fill:var(--accent);opacity:.72}
+    /* nominal hour-zone limits (toggle) — boundary every 15° at off·15−7.5°, offset label centred per zone */
+    .tz-hours .hl{stroke:var(--accent);stroke-width:.5;opacity:.32;stroke-dasharray:3 4}
+    .tz-hours .hl0{stroke-width:.9;opacity:.6;stroke-dasharray:none}
+    .tz-hours .hll{font-family:var(--mono);font-size:9px;fill:var(--accent);opacity:.72;paint-order:stroke;stroke:#050505;stroke-width:2.5px}
+    .tz-hours .hll0{opacity:1;font-weight:700}
     .tz-lbl{font-family:var(--mono);font-size:12px;font-weight:600;fill:#fff;paint-order:stroke;stroke:#050505;stroke-width:3.5px;pointer-events:none}
-    .tz-sun{fill:#fde68a;stroke:#eab308;stroke-width:1}
+    .tz-sun{fill:#fde68a;stroke:#a16207;stroke-width:1.2}
     .tzmap-legend{position:absolute;bottom:7px;right:10px;font-family:var(--mono);font-size:.56rem;color:var(--text-sec);
       background:rgba(5,5,5,.55);padding:2px 8px;border-radius:10px;pointer-events:none}
 
@@ -313,6 +320,10 @@
           </div>
         </div>
       </div>
+      <div class="now-mk-row">
+        <div class="kicker" title="Nominal session hours — public holidays are not accounted for">Stock market openings</div>
+        <div id="nowMarkets" class="nc-grid"></div>
+      </div>
       <div class="now-cd-row">
         <div class="kicker">Highlighted countdowns</div>
         <div id="nowCountdowns" class="nc-grid"></div>
@@ -326,7 +337,7 @@
         <div class="modal-head">
           <div class="modal-title">Zones</div>
           <div class="mt-controls">
-            <button class="btn sm map-toggle" id="toggleHours" aria-pressed="false" title="Show one meridian per hour of UTC offset">◷ Hour lines</button>
+            <button class="btn sm map-toggle" id="toggleHours" aria-pressed="false" title="Show nominal hour-zone limits — real zones deviate politically">◷ Hour lines</button>
             <button class="btn sm" id="openZoneSearch" title="Search all time zones">⌕ Search zones</button>
           </div>
           <button class="modal-close" id="closeZones" aria-label="Close Zones">✕</button>
@@ -459,7 +470,6 @@
     var readDefs=[
       {lbl:'UTC',        get:function(d){return fmtTime(d,'UTC')}},
       {lbl:'Unix epoch', get:function(d){return String(Math.floor(d.getTime()/1000))}},
-      {lbl:'Epoch (ms)', get:function(d){return String(d.getTime())}},
     ];
     function buildReadouts(){
       $('readGrid').innerHTML=readDefs.map(function(r,i){
@@ -477,7 +487,7 @@
       readDefs.forEach(function(r,i){var el=$('read-'+i);if(el)el.textContent=r.get(d)});
     }
     $('fmtToggle').onclick=function(){hour12=!hour12;localStorage.setItem(LS_FMT,hour12?'12':'24');
-      $('fmtToggle').textContent=hour12?'24-hour':'12-hour';renderZones();renderCd();tickCd();tickNow(new Date());renderNowCities(new Date(),true)};
+      $('fmtToggle').textContent=hour12?'24-hour':'12-hour';renderZones();renderCd();tickCd();tickNow(new Date());renderMarkets(new Date());renderNowCities(new Date(),true)};
     $('fmtToggle').textContent=hour12?'24-hour':'12-hour';
 
     /* ---------- ZONES ---------- */
@@ -668,14 +678,18 @@
       }).join('');
     }
     function renderMap(d){ drawMap('tz',d); drawMap('nm',d); }
-    // hour-zone meridians — one vertical line per hour of UTC offset (−12…+12), static.
+    // nominal hour-zone limits — boundaries every 15° at off·15−7.5° (±172.5°), offset label centred
+    // between them at off·15. UTC+0's two limits are emphasised. Real zones deviate politically.
     var showHours=load(LS_HOURS,false);
     function hourLinesHTML(){
-      var h='';
-      for(var off=-12;off<=12;off++){
-        var x=proj(0,off*15)[0].toFixed(1);
-        h+='<line class="hl'+(off===0?' hl0':'')+'" x1="'+x+'" y1="0" x2="'+x+'" y2="500"/>';
-        h+='<text class="hll" x="'+x+'" y="12" text-anchor="middle">'+(off>0?'+'+off:off)+'</text>';
+      var h='',lon,off,x;
+      for(lon=-172.5;lon<=172.5;lon+=15){
+        x=proj(0,lon)[0].toFixed(1);
+        h+='<line class="hl'+(Math.abs(lon)===7.5?' hl0':'')+'" x1="'+x+'" y1="0" x2="'+x+'" y2="500"/>';
+      }
+      for(off=-12;off<=12;off++){
+        x=proj(0,Math.max(-175,Math.min(175,off*15)))[0].toFixed(1);   // clamp ±12 labels inside the map edge
+        h+='<text class="hll'+(off===0?' hll0':'')+'" x="'+x+'" y="12" text-anchor="middle">'+(off>0?'+'+off:off)+'</text>';
       }
       return h;
     }
@@ -711,6 +725,70 @@
       if(!$('zonesModal').hidden){closeZones();return;}
       if(!$('countdownsModal').hidden){closeCountdowns();return;}
     });
+
+    /* ---------- MARKETS ---------- */
+    // Nominal Mon–Fri sessions in the market's LOCAL minutes-from-midnight (public holidays not accounted for).
+    var MARKETS=[
+      {n:'NYSE',c:'New York',z:'America/New_York',s:[[570,960]]},
+      {n:'NASDAQ',c:'New York',z:'America/New_York',s:[[570,960]]},
+      {n:'TSX',c:'Toronto',z:'America/Toronto',s:[[570,960]]},
+      {n:'B3',c:'Sao Paulo',z:'America/Sao_Paulo',s:[[600,1020]]},
+      {n:'LSE',c:'London',z:'Europe/London',s:[[480,990]]},
+      {n:'Euronext',c:'Paris',z:'Europe/Paris',s:[[540,1050]]},
+      {n:'XETRA',c:'Frankfurt',z:'Europe/Berlin',s:[[540,1050]]},
+      {n:'SIX',c:'Zurich',z:'Europe/Zurich',s:[[540,1050]]},
+      {n:'JSE',c:'Johannesburg',z:'Africa/Johannesburg',s:[[540,1020]]},
+      {n:'NSE',c:'Mumbai',z:'Asia/Kolkata',s:[[555,930]]},
+      {n:'SSE',c:'Shanghai',z:'Asia/Shanghai',s:[[570,690],[780,900]]},
+      {n:'HKEX',c:'Hong Kong',z:'Asia/Hong_Kong',s:[[570,720],[780,960]]},
+      {n:'TSE',c:'Tokyo',z:'Asia/Tokyo',s:[[540,690],[750,900]]},
+      {n:'ASX',c:'Sydney',z:'Australia/Sydney',s:[[600,960]]}
+    ];
+    var mkPartFmt={}, mkTimeFmt={}, MKWD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    function mkParts(z,d){   // weekday + minutes-from-midnight IN the market's zone (DST-safe)
+      var f=mkPartFmt[z]||(mkPartFmt[z]=new Intl.DateTimeFormat('en-US',{timeZone:z,hour12:false,weekday:'short',hour:'2-digit',minute:'2-digit'}));
+      var p=f.formatToParts(d).reduce(function(a,x){a[x.type]=x.value;return a},{});
+      return {wd:MKWD.indexOf(p.weekday), min:(+p.hour%24)*60+(+p.minute)};
+    }
+    function mkTime(z,d){
+      var k=z+(hour12?'12':'24');
+      var f=mkTimeFmt[k]||(mkTimeFmt[k]=new Intl.DateTimeFormat('en-GB',{timeZone:z,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:hour12}));
+      return f.format(d).replace(/\s?(am|pm)/i,function(m){return ' '+m.trim().toUpperCase()});
+    }
+    function mkDur(m){var dd=Math.floor(m/1440),h=Math.floor(m%1440/60),mm=m%60,o='';if(dd)o+=dd+'d ';if(dd||h)o+=h+'h ';return o+mm+'m'}
+    function mkStatus(mk,d){
+      var lp=mkParts(mk.z,d), wd=lp.wd, min=lp.min, s=mk.s, i, w;
+      if(wd>=1&&wd<=5){
+        for(i=0;i<s.length;i++){
+          if(min>=s[i][0]&&min<s[i][1]) return {cls:'up',txt:'Open · closes in '+mkDur(s[i][1]-min)};
+          if(min<s[i][0]){
+            w=s[i][0]-min;
+            if(i>0) return {cls:'bi',txt:'Break · reopens in '+mkDur(w)};
+            if(w<=60) return {cls:'bi',txt:'Opening soon · opens in '+mkDur(w)};
+            return {cls:'pa',txt:'Closed · opens in '+mkDur(w)};
+          }
+        }
+      }
+      var days=1, nd=(wd+1)%7;                    // after close or weekend → next Mon–Fri first session
+      while(nd===0||nd===6){days++;nd=(nd+1)%7;}
+      return {cls:'pa',txt:'Closed · opens in '+mkDur(days*1440-min+s[0][0])};
+    }
+    function renderMarkets(d){
+      var el=$('nowMarkets'); if(!el)return;
+      if(!el.firstChild){
+        el.innerHTML=MARKETS.map(function(m,i){
+          return '<div class="mk-card" title="'+m.n+' — nominal session hours; public holidays not accounted for">'+
+            '<div class="mk-name">'+m.n+'</div><div class="mk-city">'+m.c+'</div>'+
+            '<div class="mk-time" id="mkt-'+i+'">—</div>'+
+            '<span class="pill pa" id="mkp-'+i+'">—</span></div>';
+        }).join('');
+      }
+      MARKETS.forEach(function(m,i){
+        $('mkt-'+i).textContent=mkTime(m.z,d);
+        var st=mkStatus(m,d), p=$('mkp-'+i);
+        p.textContent=st.txt; p.className='pill '+st.cls;
+      });
+    }
 
     /* ---------- COUNTDOWNS ---------- */
     var BUILTINS=[
@@ -816,6 +894,19 @@
       {id:'sc95',name:"World of Warcraft Launched",date:'2004-11-23'},
       {id:'sc96',name:"Minecraft Initial Release",date:'2009-05-17'},
       {id:'sc97',name:"Nintendo Switch Released",date:'2017-03-03'},
+      /* astronomy & world events */
+      {id:'ev1',name:"Total Solar Eclipse over Iberia",date:'2026-08-12'},
+      {id:'ev2',name:"US Midterm Elections",date:'2026-11-03'},
+      {id:'ev3',name:"Christmas 2026",date:'2026-12-25'},
+      {id:'ev4',name:"March Equinox 2027",date:'2027-03-20'},
+      {id:'ev5',name:"June Solstice 2027",date:'2027-06-21'},
+      {id:'ev6',name:"Total Solar Eclipse (Longest of the Century, N. Africa)",date:'2027-08-02'},
+      {id:'ev7',name:"Leap Day 2028",date:'2028-02-29'},
+      {id:'ev8',name:"LA 2028 Olympics Opening",date:'2028-07-14'},
+      {id:'ev9',name:"Apophis Earth Close Approach",date:'2029-04-13'},
+      {id:'ev10',name:"New Year 2030",date:'2030-01-01'},
+      {id:'ev11',name:"Unix 2,000,000,000 Seconds",date:'2033-05-18',time:'03:33'},
+      {id:'ev12',name:"Halley's Comet Perihelion",date:'2061-07-28'},
       {id:'scArch',name:"Arch Linux End of Life",ts:Date.now()+60000},
       {id:'sc41k',name:"The 41st Millennium Begins",ts:Date.UTC(40000,0,1)}
     ];
@@ -916,7 +1007,7 @@
       var d=new Date();
       tickNow(d);
       renderPinnedStrips(d);   // keep the Now + Zones pinned strips live
-      drawMap('nm',d); renderNowCountdowns(); renderNowCities(d);
+      drawMap('nm',d); renderMarkets(d); renderNowCountdowns(); renderNowCities(d);
       if(!$('zonesModal').hidden){ drawMap('tz',d); renderZoneList(); }
       tickCd();
     }
@@ -924,7 +1015,7 @@
     tickNow(new Date());
     renderRegionBar();
     renderZones();
-    drawMap('nm'); renderNowCountdowns(); renderNowCities(new Date(),true);
+    drawMap('nm'); renderMarkets(new Date()); renderNowCountdowns(); renderNowCities(new Date(),true);
     renderCd(); tickCd();
     window.addEventListener('resize',function(){ renderNowCities(new Date(),true); if(!$('zonesModal').hidden) drawMap('tz'); });
     setInterval(loop,1000);
