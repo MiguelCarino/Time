@@ -138,6 +138,7 @@
     .now-mk-row{min-width:0}
     .now-mk-row .kicker{margin-bottom:12px}
     .mk-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px}
+    .mk-card.pinned{border-color:var(--accent-dim);background:linear-gradient(145deg,#14100a,#0b0b0b)}
     .mk-name{font-weight:700;font-size:.9rem}
     .mk-city{font-family:var(--mono);font-size:.6rem;color:var(--text-muted);margin-top:2px}
     .mk-time{font-family:var(--mono);font-size:1.05rem;font-weight:700;margin-top:8px}
@@ -558,7 +559,10 @@
     function offOf(tz,d){ if(offCache[tz]===undefined) offCache[tz]=zoneOffsetMin(tz,d); return offCache[tz]; }
     function cityOf(tz){var p=tz.split('/');return (p[p.length-1]||tz).replace(/_/g,' ')}
     function regionOf(tz){var p=tz.split('/');return p.length>1?p[0].replace(/_/g,' '):'—'}
-    var pins=load(LS_PINS,['America/Los_Angeles','America/New_York','Europe/London','Europe/Paris','Asia/Dubai','Asia/Singapore','Asia/Tokyo','Australia/Sydney']).filter(function(z){return ALLZONES.indexOf(z)>=0});
+    var pins=load(LS_PINS,['America/Anchorage','America/Vancouver','America/Los_Angeles','Pacific/Honolulu',
+      'America/Mexico_City','America/New_York','Europe/London','America/Nuuk','Atlantic/Reykjavik','Europe/Athens',
+      'Europe/Moscow','Australia/Perth','Australia/Sydney','Asia/Seoul','Asia/Tokyo','Asia/Vladivostok',
+      'Asia/Singapore','Asia/Shanghai','America/Argentina/Buenos_Aires','America/Santiago']).filter(function(z){return ALLZONES.indexOf(z)>=0});
     var zoneQuery='', activeRegion='all';
 
     // Divide zones by geographic region (map region), from the IANA prefix.
@@ -819,18 +823,19 @@
       var lp=mkParts(mk.z,d), wd=lp.wd, min=lp.min, s=mk.s, i, w;
       if(wd>=1&&wd<=5){
         for(i=0;i<s.length;i++){
-          if(min>=s[i][0]&&min<s[i][1]) return {cls:'up',txt:'Open · closes in '+mkDur(s[i][1]-min)};
+          if(min>=s[i][0]&&min<s[i][1]) return {cls:'up',txt:'Open · closes in '+mkDur(s[i][1]-min),open:true,inMin:0};
           if(min<s[i][0]){
             w=s[i][0]-min;
-            if(i>0) return {cls:'bi',txt:'Break · reopens in '+mkDur(w)};
-            if(w<=60) return {cls:'bi',txt:'Opening soon · opens in '+mkDur(w)};
-            return {cls:'pa',txt:'Closed · opens in '+mkDur(w)};
+            if(i>0) return {cls:'bi',txt:'Break · reopens in '+mkDur(w),open:true,inMin:w};  // lunch break counts as an open day
+            if(w<=60) return {cls:'bi',txt:'Opening soon · opens in '+mkDur(w),inMin:w};
+            return {cls:'pa',txt:'Closed · opens in '+mkDur(w),inMin:w};
           }
         }
       }
       var days=1, nd=(wd+1)%7;                    // after close or weekend → next Mon–Fri first session
       while(nd===0||nd===6){days++;nd=(nd+1)%7;}
-      return {cls:'pa',txt:'Closed · opens in '+mkDur(days*1440-min+s[0][0])};
+      w=days*1440-min+s[0][0];
+      return {cls:'pa',txt:'Closed · opens in '+mkDur(w),inMin:w};
     }
     // Horizontal marquee (markets / countdowns rows): sibling of setupCityMarquee.
     // One card set → measure; if wider than the row, duplicate it and drift left
@@ -849,22 +854,34 @@
       track.style.animationDuration=Math.max(14,Math.round(unit/28))+'s';
       mq.classList.add('scrolling');
     }
-    var mkBuilt=false;
+    // The row shows only what matters right now: markets that are open (or on
+    // lunch break), opening within 3 hours, or hosted in a pinned city (starred,
+    // always visible). Rebuilt only when that visible set changes, so the
+    // marquee glides; every other tick updates the cards in place.
+    var mkSig=null;
     function renderMarkets(d){
       var track=$('nowMarkets'); if(!track)return;
-      if(!mkBuilt){
-        mkBuilt=true;
-        setupRowMarquee($('mkMarquee'),track,MARKETS.map(function(m,i){
-          return '<div class="mk-card" data-i="'+i+'" title="'+m.n+' — nominal session hours; public holidays not accounted for">'+
-            '<div class="mk-name">'+m.n+'</div><div class="mk-city">'+m.c+'</div>'+
+      var sts=MARKETS.map(function(m){return mkStatus(m,d)});
+      var vis=[];
+      MARKETS.forEach(function(m,i){
+        var pinned=pins.indexOf(m.z)>=0;
+        if(pinned||sts[i].open||sts[i].inMin<=180) vis.push({i:i,pinned:pinned});
+      });
+      var sig=vis.map(function(v){return v.i+(v.pinned?'p':'')}).join(',');
+      if(sig!==mkSig){
+        mkSig=sig;
+        var one=vis.length?vis.map(function(v){var m=MARKETS[v.i];
+          return '<div class="mk-card'+(v.pinned?' pinned':'')+'" data-i="'+v.i+'" title="'+m.n+' — nominal session hours; public holidays not accounted for">'+
+            '<div class="mk-name">'+(v.pinned?'★ ':'')+m.n+'</div><div class="mk-city">'+m.c+'</div>'+
             '<div class="mk-time">—</div>'+
             '<span class="pill pa">—</span></div>';
-        }).join(''));
+        }).join(''):'<div class="muted-note">No markets open or opening within 3 hours.</div>';
+        setupRowMarquee($('mkMarquee'),track,one);
       }
       track.querySelectorAll('.mk-card').forEach(function(card){
         var m=MARKETS[+card.dataset.i]; if(!m)return;
         card.querySelector('.mk-time').textContent=mkTime(m.z,d);
-        var st=mkStatus(m,d), p=card.querySelector('.pill');
+        var st=sts[+card.dataset.i], p=card.querySelector('.pill');
         p.textContent=st.txt; p.className='pill '+st.cls;
       });
     }
@@ -1243,7 +1260,7 @@
     renderCd(); tickCd();
     window.addEventListener('resize',function(){
       renderNowCities(new Date(),true);
-      mkBuilt=false; nowCdSig=null; renderMarkets(new Date()); renderNowCountdowns();  // re-fit the row marquees
+      mkSig=null; nowCdSig=null; renderMarkets(new Date()); renderNowCountdowns();  // re-fit the row marquees
       if(!$('zonesModal').hidden) drawMap('tz');
     });
     setInterval(loop,1000);
