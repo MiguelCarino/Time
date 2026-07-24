@@ -281,6 +281,20 @@
     .pill.pa{color:var(--text-muted);border-color:var(--border)}
     .pill.bi{color:var(--accent);border-color:var(--accent-dim);background:var(--accent-faint)}
 
+    /* ---- WORKBENCH ---- */
+    .wb-input{width:100%;height:46px;background:var(--bg-elev);border:1px solid var(--border);border-radius:8px;
+      color:var(--text);font-family:var(--mono);font-size:.92rem;padding:0 14px}
+    .wb-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-faint)}
+    .wb-read{font-family:var(--mono);font-size:.7rem;color:var(--text-sec);margin:10px 2px 18px;min-height:1.2em}
+    .wb-read b{color:var(--accent);font-weight:600}
+    .wb-read.err{color:var(--err)}
+    .wb-select{height:28px;background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;
+      color:var(--text-sec);font-family:var(--mono);font-size:.62rem;padding:0 6px;cursor:pointer}
+    .wb-select:focus{outline:none;border-color:var(--accent)}
+    #wbGrid .read .val{font-size:.9rem}
+    #wbGrid{margin-bottom:4px}
+    .wb-note{font-family:var(--mono);font-size:.62rem;color:var(--text-muted);line-height:1.7;margin-top:14px}
+
     /* ---- toast ---- */
     .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(14px);z-index:9999;
       font-family:var(--mono);font-size:.74rem;font-weight:700;padding:10px 16px;border-radius:8px;
@@ -300,6 +314,7 @@
   <div class="nav-actions" id="tabs" data-carino-actions>
     <button class="btn sm" id="openZones">✦ Zones <span class="cnt" id="pinCount">0</span></button>
     <button class="btn sm" id="openCountdowns">⧗ Countdowns <span class="cnt" id="cdCount">0</span></button>
+    <button class="btn sm" id="openWb">⌗ Workbench</button>
   </div>
 
   <main class="stage">
@@ -404,6 +419,32 @@
       </form>
           <div class="cd-grid" id="cdGrid"></div>
           <div class="muted-note" id="cdEmpty" hidden>No countdowns yet — add one above.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIMESTAMP WORKBENCH (popup) -->
+    <div class="modal" id="wbModal" hidden>
+      <div class="modal-backdrop" id="wbBackdrop"></div>
+      <div class="modal-card modal-wide">
+        <div class="modal-head">
+          <div class="modal-title">Workbench</div>
+          <div class="mt-controls">
+            <select class="wb-select" id="wbRate" title="SMPTE frame rate"></select>
+            <button class="btn sm" id="wbNow" title="Track the current instant">◉ Now</button>
+          </div>
+          <button class="modal-close" id="closeWb" aria-label="Close Workbench">✕</button>
+        </div>
+        <div class="modal-body">
+          <input class="wb-input" id="wbInput" spellcheck="false" autocomplete="off" autocapitalize="off"
+                 placeholder="Paste any timestamp — epoch, ISO 8601 / RFC 3339, DICOM DA/DT, or SMPTE HH:MM:SS:FF">
+          <div class="wb-read" id="wbRead"></div>
+          <div class="read-grid" id="wbGrid"></div>
+          <div class="divider" id="wbCitiesHead">In your pinned cities</div>
+          <div class="zone-strip" id="wbCities"></div>
+          <p class="wb-note">SMPTE timecode is read as time since local midnight on the instant's date, at the selected rate.
+            23.976 and 29.97 NDF timecode drifts against the wall clock by design; 29.97 DF tracks it.
+            A bare 10-digit number is read as epoch seconds, never as a truncated DICOM DT.</p>
         </div>
       </div>
     </div>
@@ -741,6 +782,7 @@
       if(!$('zonePopup').hidden){closeZonePopup();return;}
       if(!$('zonesModal').hidden){closeZones();return;}
       if(!$('countdownsModal').hidden){closeCountdowns();return;}
+      if(!$('wbModal').hidden){closeWb();return;}
     });
 
     /* ---------- MARKETS ---------- */
@@ -1047,6 +1089,142 @@
       copy(location.origin+location.pathname+'?c='+encodeURIComponent(enc));
     };
 
+    /* ---------- TIMESTAMP WORKBENCH ---------- */
+    // One instant, every notation: epoch / ISO 8601 / DICOM / SMPTE / pinned cities.
+    var LS_WBRATE='time.wbrate';
+    var WB_RATES=[
+      {id:'23976', label:'23.976',    num:24000, den:1001, nominal:24, drop:false},
+      {id:'24',    label:'24',        num:24,    den:1,    nominal:24, drop:false},
+      {id:'25',    label:'25',        num:25,    den:1,    nominal:25, drop:false},
+      {id:'2997df',label:'29.97 DF',  num:30000, den:1001, nominal:30, drop:true},
+      {id:'2997',  label:'29.97 NDF', num:30000, den:1001, nominal:30, drop:false},
+      {id:'30',    label:'30',        num:30,    den:1,    nominal:30, drop:false},
+    ];
+    var wbRate=WB_RATES.filter(function(r){return r.id===load(LS_WBRATE,'25')})[0]||WB_RATES[2];
+    var wbLive=true, wbDate=new Date();
+
+    function tcToFrames(h,m,s,f,r){
+      var frames=(h*3600+m*60+s)*r.nominal+f;
+      if(r.drop){var tm=h*60+m; frames-=2*(tm-Math.floor(tm/10));}
+      return frames;
+    }
+    function framesToTc(fn,r){
+      if(r.drop){ // 29.97 drop-frame: re-insert the 18 frames skipped per 10-minute block
+        var d=Math.floor(fn/17982), m=fn%17982;
+        if(m<2)m+=2;
+        fn+=18*d+2*Math.floor((m-2)/1798);
+      }
+      var n=r.nominal, f=fn%n, s=Math.floor(fn/n)%60, mi=Math.floor(fn/(n*60))%60, h=Math.floor(fn/(n*3600));
+      return pad(h)+':'+pad(mi)+':'+pad(s)+(r.drop?';':':')+pad(f);
+    }
+    function localMidnight(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate())}
+
+    // Returns {date, how} or {err}. Data, not commands: every branch validates.
+    function wbParse(raw){
+      var s=raw.trim(); if(!s)return null;
+      var m;
+      if(/^\d{13}$/.test(s)) return {date:new Date(+s), how:'Unix epoch milliseconds'};
+      if(/^\d{10}$/.test(s)) return {date:new Date(+s*1000), how:'Unix epoch seconds'};
+      if(/^\d{9}$/.test(s))  return {date:new Date(+s*1000), how:'Unix epoch seconds'};
+      // DICOM DA / DT — 8, 12 or 14 digits, optional fraction and ±ZZXX offset
+      if((m=s.match(/^(\d{4})(\d{2})(\d{2})(?:(\d{2})(\d{2})(\d{2})?)?(?:\.(\d{1,6}))?([+-]\d{4})?$/))){
+        var y=+m[1],mo=+m[2],da=+m[3];
+        if(mo>=1&&mo<=12&&da>=1&&da<=31){
+          var hh=+(m[4]||0),mi=+(m[5]||0),se=+(m[6]||0),ms=m[7]?Math.round(+('0.'+m[7])*1000):0;
+          if(hh<24&&mi<60&&se<60){
+            if(m[8]){var om=(+m[8].slice(1,3))*60+(+m[8].slice(3,5)); if(m[8][0]==='-')om=-om;
+              return {date:new Date(Date.UTC(y,mo-1,da,hh,mi,se,ms)-om*60000), how:'DICOM DT ('+m[8]+')'};}
+            return {date:new Date(y,mo-1,da,hh,mi,se,ms), how:m[4]?'DICOM DT (local)':'DICOM DA (local midnight)'};
+          }
+        }
+      }
+      // SMPTE timecode — ';' hints drop-frame but the rate selector decides the math
+      if((m=s.match(/^(\d{1,2}):(\d{2}):(\d{2})([:;])(\d{1,2})$/))){
+        var h=+m[1],mn=+m[2],sc=+m[3],fr=+m[5];
+        if(h<24&&mn<60&&sc<60&&fr<wbRate.nominal){
+          var secs=tcToFrames(h,mn,sc,fr,wbRate)*wbRate.den/wbRate.num;
+          return {date:new Date(localMidnight(new Date()).getTime()+secs*1000),
+                  how:'SMPTE timecode @ '+wbRate.label+' (today, local)'};
+        }
+      }
+      // ISO 8601 / RFC 3339 — date-only and zoneless forms read as LOCAL, unlike new Date()
+      if((m=s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?\s*(Z|[+-]\d{2}:?\d{2})?)?$/i))){
+        var Y=+m[1],MO=+m[2],DA=+m[3],H=+(m[4]||0),MI=+(m[5]||0),SE=+(m[6]||0),MS=+((m[7]||'')+'00').slice(0,3)||0;
+        if(MO>=1&&MO<=12&&DA>=1&&DA<=31&&H<24&&MI<60&&SE<60){
+          if(m[8]&&m[8].toUpperCase()==='Z') return {date:new Date(Date.UTC(Y,MO-1,DA,H,MI,SE,MS)), how:'ISO 8601 (UTC)'};
+          if(m[8]){var o=m[8].replace(':',''),omin=(+o.slice(1,3))*60+(+o.slice(3,5)); if(o[0]==='-')omin=-omin;
+            return {date:new Date(Date.UTC(Y,MO-1,DA,H,MI,SE,MS)-omin*60000), how:'ISO 8601 ('+m[8]+')'};}
+          return {date:new Date(Y,MO-1,DA,H,MI,SE,MS), how:m[4]?'ISO 8601 (local)':'ISO date (local midnight)'};
+        }
+      }
+      return {err:1};
+    }
+
+    function dicomOf(d){
+      var om=-d.getTimezoneOffset(), sg=om<0?'-':'+', a=Math.abs(om);
+      return ''+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds())+sg+pad(Math.floor(a/60))+pad(a%60);
+    }
+    function isoLocalOf(d){
+      var om=-d.getTimezoneOffset(), sg=om<0?'-':'+', a=Math.abs(om);
+      return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())+sg+pad(Math.floor(a/60))+':'+pad(a%60);
+    }
+    function smpteOf(d){
+      var secs=(d.getTime()-localMidnight(d).getTime())/1000;
+      if(secs<0)secs=0;
+      // +0.05 frame absorbs the Date-ms truncation (≤0.03 frames at 29.97) so a
+      // timecode fed in round-trips to itself instead of one frame short.
+      return framesToTc(Math.floor(secs*wbRate.num/wbRate.den+0.05),wbRate)+' @ '+wbRate.label;
+    }
+    function wbRender(d){
+      wbDate=d;
+      var vals=[
+        ['Unix epoch (s)', String(Math.floor(d.getTime()/1000))],
+        ['Unix epoch (ms)', String(d.getTime())],
+        ['ISO 8601 · UTC', d.toISOString().replace(/\.\d{3}Z$/,'Z')],
+        ['ISO 8601 · local', isoLocalOf(d)],
+        ['DICOM DT', dicomOf(d)],
+        ['DICOM DA · TM', ''+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+' · '+pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds())],
+        ['SMPTE timecode', smpteOf(d)],
+        ['ISO week · day of year', 'W'+pad(isoWeek(d))+' · day '+dayOfYear(d)],
+      ];
+      $('wbGrid').innerHTML=vals.map(function(v,i){
+        return '<div class="read" data-v="'+esc(v[1])+'"><span class="cp">click to copy</span>'+
+               '<div class="lbl">'+v[0]+'</div><div class="val">'+esc(v[1])+'</div></div>';
+      }).join('');
+      $('wbCitiesHead').hidden=!pins.length; $('wbCities').innerHTML=pins.map(function(tz){
+        var t=fmtTime(d,tz);
+        var day=new Intl.DateTimeFormat('en-GB',{timeZone:tz,weekday:'short',day:'numeric',month:'short'}).format(d);
+        return '<div class="zone"><div class="z-top"><span class="z-city">'+esc(cityOf(tz))+'</span></div>'+
+          '<div class="z-time">'+t+'</div>'+
+          '<div class="z-meta"><span>'+day+'</span><span>'+offLabel(zoneOffsetMin(tz,d))+'</span></div></div>';
+      }).join('');
+    }
+    function wbFeedback(msg,err){var el=$('wbRead');el.textContent='';el.className='wb-read'+(err?' err':'');
+      if(!err&&msg.indexOf('|')>=0){var p=msg.split('|');var b=document.createElement('b');b.textContent=p[0];el.append(b,document.createTextNode(p[1]));}
+      else el.textContent=msg;}
+    function wbUpdate(){
+      var raw=$('wbInput').value;
+      if(!raw.trim()){wbLive=true;wbFeedback('Tracking now — type or paste any timestamp to freeze an instant.');wbRender(new Date());return;}
+      var r=wbParse(raw);
+      if(r.err){wbLive=false;wbFeedback('Not recognized — epoch (10 or 13 digits), ISO 8601 / RFC 3339, DICOM DA/DT, or SMPTE HH:MM:SS:FF.',1);return;}
+      if(isNaN(r.date)){wbLive=false;wbFeedback('That parses, but it is not a real moment in time.',1);return;}
+      wbLive=false;wbFeedback('Read as: |'+r.how);wbRender(r.date);
+    }
+    $('wbRate').innerHTML=WB_RATES.map(function(r){return '<option value="'+r.id+'"'+(r.id===wbRate.id?' selected':'')+'>'+r.label+' fps</option>'}).join('');
+    $('wbRate').addEventListener('change',function(){
+      wbRate=WB_RATES.filter(function(r){return r.id===this.value},this)[0]||wbRate;
+      save(LS_WBRATE,wbRate.id);
+      $('wbInput').value.trim()?wbUpdate():wbRender(wbDate);
+    });
+    $('wbGrid').addEventListener('click',function(e){var c=e.target.closest('.read');if(c)copy(c.dataset.v)});
+    $('wbInput').addEventListener('input',wbUpdate);
+    $('wbNow').addEventListener('click',function(){$('wbInput').value='';wbUpdate();$('wbInput').focus()});
+    function openWb(){$('wbModal').hidden=false;wbUpdate();$('wbInput').focus()}
+    function closeWb(){$('wbModal').hidden=true}
+    $('openWb').addEventListener('click',openWb);
+    $('closeWb').addEventListener('click',closeWb);
+    $('wbBackdrop').addEventListener('click',closeWb);
+
     /* ---------- main loop ---------- */
     function loop(){
       var d=new Date();
@@ -1054,6 +1232,7 @@
       renderPinnedStrips(d);   // keep the Now + Zones pinned strips live
       drawMap('nm',d); renderMarkets(d); renderNowCountdowns(); renderNowCities(d);
       if(!$('zonesModal').hidden){ drawMap('tz',d); renderZoneList(); }
+      if(!$('wbModal').hidden && wbLive) wbRender(d);
       tickCd();
     }
     buildReadouts();
