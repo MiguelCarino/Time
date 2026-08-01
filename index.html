@@ -360,9 +360,9 @@
 
   <!-- section tabs -->
   <div class="nav-actions" id="tabs" data-carino-actions>
-    <button class="btn sm" id="openZones">✦ Zones <span class="cnt" id="pinCount">0</span></button>
-    <button class="btn sm" id="openCountdowns">⧗ Countdowns <span class="cnt" id="cdCount">0</span></button>
-    <button class="btn sm" id="openWb">⌗ Workbench</button>
+    <button class="btn sm" id="openZones">✦ <span data-i18n>Zones</span> <span class="cnt" id="pinCount">0</span></button>
+    <button class="btn sm" id="openCountdowns">⧗ <span data-i18n>Countdowns</span> <span class="cnt" id="cdCount">0</span></button>
+    <button class="btn sm" id="openWb" data-i18n>⌗ Workbench</button>
   </div>
 
   <main class="stage">
@@ -380,7 +380,7 @@
               <g id="nmCities"></g>
               <g id="nmMarkers"></g>
             </svg>
-            <div class="tzmap-legend">☀ day · 🌙 night · • city · ★ pinned</div>
+            <div class="tzmap-legend" data-i18n>☀ day · 🌙 night · • city · ★ pinned</div>
           </div>
         </div>
         <div class="nd-side">
@@ -392,18 +392,18 @@
             <div class="clock-src" id="clockSrc" title="All times on this page — clocks, markets, countdowns, calendar, workbench — derive from this clock. Adjust it if this device's clock drifts."></div>
             <div class="clock-adj" id="clockAdj" hidden>
               <input id="csInput" type="number" step="any" placeholder="seconds, e.g. -1.25" aria-label="Clock offset in seconds">
-              <button class="btn sm" id="csApply" type="button">Apply</button>
-              <button class="btn sm" id="csReset" type="button">Reset</button>
+              <button class="btn sm" id="csApply" type="button" data-i18n>Apply</button>
+              <button class="btn sm" id="csReset" type="button" data-i18n>Reset</button>
             </div>
           </div>
           <div class="util-strip" id="utilStrip">
-            <button class="btn sm" id="utTick" type="button" title="Tick sound each second — session-only; audio can never auto-start on load">◉ Tick</button>
+            <button class="btn sm" id="utTick" type="button" title="Tick sound each second — session-only; audio can never auto-start on load" data-i18n>◉ Tick</button>
             <button class="btn sm" id="utMet" type="button" title="Metronome">♩ Metro</button>
             <button class="btn sm" id="utTimer" type="button" title="Timer">⏱ Timer</button>
-            <button class="btn sm" id="utCal" type="button" title="Calendar">▦ Cal</button>
+            <button class="btn sm" id="utCal" type="button" title="Calendar" data-i18n>▦ Cal</button>
           </div>
           <div id="nowPinnedWrap" hidden>
-            <div class="kicker">Selected cities</div>
+            <div class="kicker" data-i18n>Selected cities</div>
             <div class="city-marquee" id="cityMarquee">
               <div class="zone-strip compact" id="nowPinned"></div>
             </div>
@@ -412,11 +412,11 @@
       </div>
       <div class="now-below">
         <div class="now-mk-row">
-          <div class="kicker" title="Nominal session hours — public holidays are not accounted for">Stock market openings</div>
+          <div class="kicker" title="Nominal session hours — public holidays are not accounted for" data-i18n>Stock market openings</div>
           <div class="h-marquee" id="mkMarquee"><div id="nowMarkets" class="nc-grid"></div></div>
         </div>
         <div class="now-cd-row">
-          <div class="kicker">Highlighted countdowns</div>
+          <div class="kicker" data-i18n>Highlighted countdowns</div>
           <div class="h-marquee" id="cdMarquee"><div id="nowCountdowns" class="nc-grid"></div></div>
         </div>
       </div>
@@ -427,10 +427,10 @@
       <div class="modal-backdrop" id="zonesBackdrop"></div>
       <div class="modal-card modal-wide">
         <div class="modal-head">
-          <div class="modal-title">Zones</div>
+          <div class="modal-title" data-i18n>Zones</div>
           <div class="mt-controls">
-            <button class="btn sm map-toggle" id="toggleHours" aria-pressed="false" title="Show nominal hour-zone limits — real zones deviate politically">◷ Hour lines</button>
-            <button class="btn sm" id="openZoneSearch" title="Search all time zones">⌕ Search zones</button>
+            <button class="btn sm map-toggle" id="toggleHours" aria-pressed="false" title="Show nominal hour-zone limits — real zones deviate politically" data-i18n>◷ Hour lines</button>
+            <button class="btn sm" id="openZoneSearch" title="Search all time zones" data-i18n>⌕ Search zones</button>
           </div>
           <button class="modal-close" id="closeZones" aria-label="Close Zones">✕</button>
         </div>
@@ -445,10 +445,10 @@
           <g id="tzCities"></g>
           <g id="tzMarkers"></g>
         </svg>
-        <div class="tzmap-legend">☀ day · 🌙 night · • city · ★ pinned</div>
+        <div class="tzmap-legend" data-i18n>☀ day · 🌙 night · • city · ★ pinned</div>
       </div>
           <div class="zones-selected">
-            <div class="divider">Selected timezones <button class="btn sm" id="clearPins" style="float:right;margin-top:-4px">Clear</button></div>
+            <div class="divider"><span data-i18n>Selected timezones</span> <button class="btn sm" id="clearPins" style="float:right;margin-top:-4px" data-i18n>Clear</button></div>
             <div class="zone-strip" id="pinnedGrid"></div>
           </div>
         </div>
@@ -460,7 +460,7 @@
       <div class="modal-backdrop" id="cdBackdrop"></div>
       <div class="modal-card modal-wide">
         <div class="modal-head">
-          <div class="modal-title">Countdowns</div>
+          <div class="modal-title" data-i18n>Countdowns</div>
           <div class="search"><span class="ico">⌕</span><input id="cdSearch" placeholder="Search events…" autocomplete="off" spellcheck="false"></div>
           <button class="modal-close" id="closeCountdowns" aria-label="Close Countdowns">✕</button>
         </div>
@@ -471,15 +471,15 @@
         <div class="cd-clock" id="heroClock"></div>
       </div>
       <form class="cd-add" id="cdAdd">
-        <div class="field grow"><label for="evName">Event</label><input id="evName" placeholder="e.g. Project launch" maxlength="60" required></div>
-        <div class="field"><label for="evDate">Date</label><input id="evDate" type="date" required></div>
-        <div class="field"><label for="evTime">Time (optional)</label><input id="evTime" type="time"></div>
-        <div class="field grow"><label for="evUrl">Source URL (optional)</label><input id="evUrl" type="text" placeholder="https://…" maxlength="300" spellcheck="false"></div>
-        <button class="btn btn-primary" type="submit" style="height:38px">＋ Add</button>
-        <button class="btn" type="button" id="shareBtn" style="height:38px">⇪ Share</button>
+        <div class="field grow"><label for="evName" data-i18n>Event</label><input id="evName" placeholder="e.g. Project launch" maxlength="60" required></div>
+        <div class="field"><label for="evDate" data-i18n>Date</label><input id="evDate" type="date" required></div>
+        <div class="field"><label for="evTime" data-i18n>Time (optional)</label><input id="evTime" type="time"></div>
+        <div class="field grow"><label for="evUrl" data-i18n>Source URL (optional)</label><input id="evUrl" type="text" placeholder="https://…" maxlength="300" spellcheck="false"></div>
+        <button class="btn btn-primary" type="submit" style="height:38px" data-i18n>＋ Add</button>
+        <button class="btn" type="button" id="shareBtn" style="height:38px" data-i18n>⇪ Share</button>
       </form>
           <div class="cd-grid" id="cdGrid"></div>
-          <div class="muted-note" id="cdEmpty" hidden>No countdowns yet — add one above.</div>
+          <div class="muted-note" id="cdEmpty" hidden data-i18n>No countdowns yet — add one above.</div>
         </div>
       </div>
     </div>
@@ -489,10 +489,10 @@
       <div class="modal-backdrop" id="wbBackdrop"></div>
       <div class="modal-card modal-wide">
         <div class="modal-head">
-          <div class="modal-title">Workbench</div>
+          <div class="modal-title" data-i18n>Workbench</div>
           <div class="mt-controls">
             <select class="wb-select" id="wbRate" title="SMPTE frame rate"></select>
-            <button class="btn sm" id="wbNow" title="Track the current instant">◉ Now</button>
+            <button class="btn sm" id="wbNow" title="Track the current instant" data-i18n>◉ Now</button>
           </div>
           <button class="modal-close" id="closeWb" aria-label="Close Workbench">✕</button>
         </div>
@@ -501,9 +501,9 @@
                  placeholder="Paste any timestamp — epoch, ISO 8601 / RFC 3339, DICOM DA/DT, or SMPTE HH:MM:SS:FF">
           <div class="wb-read" id="wbRead"></div>
           <div class="read-grid" id="wbGrid"></div>
-          <div class="divider" id="wbCitiesHead">In your pinned cities</div>
+          <div class="divider" id="wbCitiesHead" data-i18n>In your pinned cities</div>
           <div class="zone-strip" id="wbCities"></div>
-          <p class="wb-note">SMPTE timecode is read as time since local midnight on the instant's date, at the selected rate.
+          <p class="wb-note" data-i18n>SMPTE timecode is read as time since local midnight on the instant's date, at the selected rate.
             23.976 and 29.97 NDF timecode drifts against the wall clock by design; 29.97 DF tracks it.
             A bare 10-digit number is read as epoch seconds, never as a truncated DICOM DT.</p>
         </div>
@@ -514,7 +514,7 @@
       <div class="modal-backdrop" id="metBackdrop"></div>
       <div class="modal-card modal-slim">
         <div class="modal-head">
-          <div class="modal-title">Metronome</div>
+          <div class="modal-title" data-i18n>Metronome</div>
           <button class="modal-close" id="closeMet" aria-label="Close Metronome">✕</button>
         </div>
         <div class="modal-body">
@@ -524,7 +524,7 @@
             <button class="btn sm" id="metUp" type="button" title="Faster">＋5</button>
           </div>
           <div class="ut-row" style="margin-top:12px"><button class="btn btn-primary" id="metToggle" type="button">▶ Start</button></div>
-          <div class="ut-note">30–240 BPM · every 4th beat accented</div>
+          <div class="ut-note" data-i18n>30–240 BPM · every 4th beat accented</div>
         </div>
       </div>
     </div>
@@ -534,7 +534,7 @@
       <div class="modal-backdrop" id="tmBackdrop"></div>
       <div class="modal-card modal-slim">
         <div class="modal-head">
-          <div class="modal-title">Timer</div>
+          <div class="modal-title" data-i18n>Timer</div>
           <button class="modal-close" id="closeTimer" aria-label="Close Timer">✕</button>
         </div>
         <div class="modal-body">
@@ -546,9 +546,9 @@
           </div>
           <div class="ut-row" style="margin-top:12px">
             <button class="btn btn-primary" id="tmToggle" type="button">▶ Start</button>
-            <button class="btn" id="tmReset" type="button">Reset</button>
+            <button class="btn" id="tmReset" type="button" data-i18n>Reset</button>
           </div>
-          <div class="ut-note">Counts against an absolute end time · 3-blip alarm at zero</div>
+          <div class="ut-note" data-i18n>Counts against an absolute end time · 3-blip alarm at zero</div>
         </div>
       </div>
     </div>
@@ -558,7 +558,7 @@
       <div class="modal-backdrop" id="calBackdrop"></div>
       <div class="modal-card modal-slim">
         <div class="modal-head">
-          <div class="modal-title">Calendar</div>
+          <div class="modal-title" data-i18n>Calendar</div>
           <button class="modal-close" id="closeCal" aria-label="Close Calendar">✕</button>
         </div>
         <div class="modal-body">
@@ -566,10 +566,10 @@
             <button class="btn sm" id="calPrev" type="button" aria-label="Previous month">‹</button>
             <div class="cal-title" id="calTitle"></div>
             <button class="btn sm" id="calNext" type="button" aria-label="Next month">›</button>
-            <button class="btn sm" id="calToday" type="button">Today</button>
+            <button class="btn sm" id="calToday" type="button" data-i18n>Today</button>
           </div>
           <div class="cal-grid" id="calGrid"></div>
-          <div class="ut-note">ISO week numbers · Monday-first</div>
+          <div class="ut-note" data-i18n>ISO week numbers · Monday-first</div>
         </div>
       </div>
     </div>
@@ -586,7 +586,7 @@
       <div class="region-bar" id="regionBar"></div>
       <div class="zp-body">
         <div id="zoneGroups"></div>
-        <div class="muted-note" id="zoneEmpty" hidden>No timezone matches that search.</div>
+        <div class="muted-note" id="zoneEmpty" hidden data-i18n>No timezone matches that search.</div>
       </div>
     </div>
   </div>
@@ -596,6 +596,7 @@
   <script src="carino-clock.js"></script>
   <script src="carino-navbar.js" data-app="Time" defer></script>
   <script src="carino-lang.js" defer></script>
+  <script src="i18n.js" defer></script>
   <script>
   (function(){
     'use strict';
@@ -608,8 +609,10 @@
     function load(k,def){try{var v=JSON.parse(localStorage.getItem(k));return v==null?def:v}catch(e){return def}}
     function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
     function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show')},1800)}
-    function copy(text){navigator.clipboard.writeText(text).then(function(){toast('Copied: '+text)},function(){toast('Copy failed')})}
+    function copy(text){navigator.clipboard.writeText(text).then(function(){toast(T('Copied: ')+text)},function(){toast(T('Copy failed'))})}
     function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+    // Fleet i18n bridge — the deferred dictionary script loads after this one, so resolve lazily; falls back to English.
+    function T(s){return (window.CarinoI18n&&window.CarinoI18n.t)?window.CarinoI18n.t(s):s}
 
     /* ---------- clock source ---------- */
     // Every "current instant" read goes through now(); a user-applied manual
@@ -639,8 +642,8 @@
       return Math.round((asUTC-date.getTime())/60000);
     }
     function offLabel(min){var s=min<0?'-':'+';min=Math.abs(min);return 'UTC'+s+pad(Math.floor(min/60))+':'+pad(min%60)}
-    function relLabel(min){if(min===0)return 'same as you';var s=min<0?'-':'+';var m=Math.abs(min);
-      var h=Math.floor(m/60),mm=m%60;return s+h+(mm?':'+pad(mm):'')+'h vs you'}
+    function relLabel(min){if(min===0)return T('same as you');var s=min<0?'-':'+';var m=Math.abs(min);
+      var h=Math.floor(m/60),mm=m%60;return s+h+(mm?':'+pad(mm):'')+T('h vs you')}
 
     /* ---------- tabs ---------- */
     // Zones & Countdowns are popups over the always-on Now screen.
@@ -666,7 +669,8 @@
         get:function(d){return fmtTime(d,'UTC')}},
       {lbl:'Epoch',title:'Unix epoch — seconds since 1970-01-01 00:00:00 UTC',
         get:function(d){return String(Math.floor(d.getTime()/1000))}},
-      {lbl:'TAI',  title:'International Atomic Time — UTC + '+TAI_UTC_S+' s (leap-second total since 2017)',
+      // {n} is filled in after translation so the whole sentence stays one dictionary key.
+      {lbl:'TAI',  title:'International Atomic Time — UTC + {n} s (leap-second total since 2017)',
         get:function(d){return fmtTime(new Date(d.getTime()+TAI_UTC_S*1000),'UTC')}},
       {lbl:'Beats',title:'Swatch Internet Time — fraction of the UTC+1 day; 1 beat = 86.4 s; no timezones, no DST',
         get:function(d){var b=((d.getTime()/1000+3600)%86400)/86.4;var t=b.toFixed(2);
@@ -674,7 +678,8 @@
     ];
     function buildReadouts(){
       $('readGrid').innerHTML=readDefs.map(function(r,i){
-        return '<div class="read" data-i="'+i+'" title="'+r.title+' · click to copy"><span class="cp">click to copy</span>'+
+        var ttl=T(r.title).replace('{n}',TAI_UTC_S)+' · '+T('click to copy');
+        return '<div class="read" data-i="'+i+'" title="'+esc(ttl)+'"><span class="cp">'+T('click to copy')+'</span>'+
                '<div class="lbl">'+r.lbl+'</div><div class="val" id="read-'+i+'">—</div></div>';
       }).join('');
       $('readGrid').onclick=function(e){var c=e.target.closest('.read');if(!c)return;copy($('read-'+c.dataset.i).textContent)};
@@ -688,8 +693,8 @@
       readDefs.forEach(function(r,i){var el=$('read-'+i);if(el)el.textContent=r.get(d)});
     }
     $('fmtToggle').onclick=function(){hour12=!hour12;localStorage.setItem(LS_FMT,hour12?'12':'24');
-      $('fmtToggle').textContent=hour12?'24-hour':'12-hour';renderZones();renderCd();tickCd();tickNow(now());renderMarkets(now());renderNowCities(now(),true)};
-    $('fmtToggle').textContent=hour12?'24-hour':'12-hour';
+      $('fmtToggle').textContent=hour12?T('24-hour'):T('12-hour');renderZones();renderCd();tickCd();tickNow(now());renderMarkets(now());renderNowCities(now(),true)};
+    $('fmtToggle').textContent=hour12?T('24-hour'):T('12-hour');
 
     /* clock-source line — declares where the time comes from; the editor applies
        a manual offset in seconds (decimals and negatives accepted). */
@@ -698,8 +703,8 @@
       var el=$('clockSrc'); if(!el)return; var adj=clockOffsetMs!==0;
       el.classList.toggle('adj',adj);
       el.innerHTML=adj
-        ?'clock: this device, adjusted '+fmtOffset()+' · <button class="cs-btn" data-act="edit" type="button">change</button> · <button class="cs-btn" data-act="reset" type="button">reset</button>'
-        :'clock: this device · <button class="cs-btn" data-act="edit" type="button">adjust</button>';
+        ?T('clock: this device, adjusted ')+fmtOffset()+' · <button class="cs-btn" data-act="edit" type="button">'+T('change')+'</button> · <button class="cs-btn" data-act="reset" type="button">'+T('reset')+'</button>'
+        :T('clock: this device')+' · <button class="cs-btn" data-act="edit" type="button">'+T('adjust')+'</button>';
     }
     function setClockOffset(ms){
       clockOffsetMs=ms; save(LS_OFFSET,clockOffsetMs);
@@ -707,19 +712,19 @@
     }
     $('clockSrc').addEventListener('click',function(e){
       var b=e.target.closest('[data-act]'); if(!b)return;
-      if(b.dataset.act==='reset'){$('clockAdj').hidden=true;setClockOffset(0);toast('Clock back on device time');return;}
+      if(b.dataset.act==='reset'){$('clockAdj').hidden=true;setClockOffset(0);toast(T('Clock back on device time'));return;}
       var row=$('clockAdj'); row.hidden=!row.hidden;
       if(!row.hidden){$('csInput').value=clockOffsetMs?String(clockOffsetMs/1000):'';$('csInput').focus();}
       renderNowCities(now(),true);              // hero height changed — re-fit the city marquee
     });
     $('csApply').addEventListener('click',function(){
       var v=parseFloat($('csInput').value);
-      if(isNaN(v)){toast('Enter an offset in seconds');return;}
+      if(isNaN(v)){toast(T('Enter an offset in seconds'));return;}
       $('clockAdj').hidden=true; setClockOffset(Math.round(v*1000));
-      toast(clockOffsetMs?'Clock adjusted '+fmtOffset():'Clock back on device time');
+      toast(clockOffsetMs?T('Clock adjusted ')+fmtOffset():T('Clock back on device time'));
     });
     $('csReset').addEventListener('click',function(){
-      $('clockAdj').hidden=true; setClockOffset(0); toast('Clock back on device time');
+      $('clockAdj').hidden=true; setClockOffset(0); toast(T('Clock back on device time'));
     });
     $('csInput').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();$('csApply').click();}});
     renderClockSrc();
@@ -770,7 +775,7 @@
       var h=+new Intl.DateTimeFormat('en-US',{timeZone:tz,hour:'2-digit',hour12:false}).format(d)%24;
       var night=(h<6||h>=19);
       return '<div class="zone'+(isPinned(tz)?' pinned':'')+'" data-tz="'+tz+'">'+
-        '<button class="pin'+(isPinned(tz)?' on':'')+'" data-pin="'+tz+'" title="Pin / unpin">'+(isPinned(tz)?'★':'☆')+'</button>'+
+        '<button class="pin'+(isPinned(tz)?' on':'')+'" data-pin="'+tz+'" title="'+T('Pin / unpin')+'">'+(isPinned(tz)?'★':'☆')+'</button>'+
         '<div class="z-top"><span class="z-daynight">'+(night?'🌙':'☀️')+'</span>'+
         '<span class="z-city">'+esc(cityOf(tz))+'</span></div>'+
         '<div class="z-time">'+fmtTime(d,tz)+'</div>'+
@@ -826,7 +831,7 @@
       var counts={}; ALLZONES.forEach(function(tz){var k=regionKey(tz);counts[k]=(counts[k]||0)+1});
       $('regionBar').innerHTML=REGIONS.filter(function(r){return r.id==='all'||counts[r.id]}).map(function(r){
         var n=r.id==='all'?ALLZONES.length:counts[r.id];
-        return '<button class="region-chip'+(activeRegion===r.id?' active':'')+'" data-region="'+r.id+'">'+r.label+'<span class="rc-n">'+n+'</span></button>';
+        return '<button class="region-chip'+(activeRegion===r.id?' active':'')+'" data-region="'+r.id+'">'+T(r.label)+'<span class="rc-n">'+n+'</span></button>';
       }).join('');
     }
     function renderZoneList(){
@@ -840,7 +845,7 @@
       REGIONS.forEach(function(r){
         if(r.id==='all')return; var g=groups[r.id]; if(!g||!g.length)return;
         var shown=g.slice(0,CAP);
-        html+='<div class="divider">'+r.label+' <span style="color:var(--text-muted)">'+g.length+(g.length>CAP?' · showing '+CAP+', refine search':'')+'</span></div>';
+        html+='<div class="divider">'+T(r.label)+' <span style="color:var(--text-muted)">'+g.length+(g.length>CAP?T(' · showing ')+CAP+T(', refine search'):'')+'</span></div>';
         html+='<div class="zgrid">'+shown.map(function(tz){return zoneCard(tz,d)}).join('')+'</div>';
       });
       $('zoneGroups').innerHTML=html;
@@ -903,7 +908,7 @@
       $(p+'Cities').innerHTML=CITYPTS.map(function(tz){
         if(isPinned(tz))return '';
         var xy=markerXY(tz), x=xy[0].toFixed(1), y=xy[1].toFixed(1);
-        return '<g class="tz-cmk" data-pin="'+tz+'"><title>'+esc(cityOf(tz))+' — '+esc(tz)+' · click to pin</title>'+
+        return '<g class="tz-cmk" data-pin="'+tz+'"><title>'+esc(cityOf(tz))+' — '+esc(tz)+T(' · click to pin')+'</title>'+
           '<circle class="tz-hit" cx="'+x+'" cy="'+y+'" r="9"/>'+
           '<circle class="tz-city" cx="'+x+'" cy="'+y+'" r="2.4"/></g>';
       }).join('');
@@ -919,7 +924,7 @@
         if(ly>493)ly=y-7;                                      // near the bottom edge (Antarctic stations) the label sits above the dot
         placed.push({lx:lx,ly:ly});
         var lead=(ly-(y+4)>6)?'<line class="tz-lead" x1="'+x.toFixed(1)+'" y1="'+y.toFixed(1)+'" x2="'+lx.toFixed(1)+'" y2="'+(ly-4).toFixed(1)+'"/>':'';
-        return '<g class="tz-mk" data-pin="'+tz+'"><title>'+esc(cityOf(tz))+' — '+esc(tz)+' · click to unpin</title>'+
+        return '<g class="tz-mk" data-pin="'+tz+'"><title>'+esc(cityOf(tz))+' — '+esc(tz)+T(' · click to unpin')+'</title>'+
           '<circle class="tz-hit" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="12"/>'+lead+
           '<circle class="tz-glow" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="7"/>'+
           '<circle class="tz-dot" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.4"/>'+
@@ -1014,19 +1019,19 @@
       var lp=mkParts(mk.z,d), wd=lp.wd, min=lp.min, s=mk.s, i, w;
       if(wd>=1&&wd<=5){
         for(i=0;i<s.length;i++){
-          if(min>=s[i][0]&&min<s[i][1]) return {cls:'up',txt:'Open · closes in '+mkDur(s[i][1]-min),open:true,inMin:0};
+          if(min>=s[i][0]&&min<s[i][1]) return {cls:'up',txt:T('Open · closes in ')+mkDur(s[i][1]-min),open:true,inMin:0};
           if(min<s[i][0]){
             w=s[i][0]-min;
-            if(i>0) return {cls:'bi',txt:'Break · reopens in '+mkDur(w),open:true,inMin:w};  // lunch break counts as an open day
-            if(w<=60) return {cls:'bi',txt:'Opening soon · opens in '+mkDur(w),inMin:w};
-            return {cls:'pa',txt:'Closed · opens in '+mkDur(w),inMin:w};
+            if(i>0) return {cls:'bi',txt:T('Break · reopens in ')+mkDur(w),open:true,inMin:w};  // lunch break counts as an open day
+            if(w<=60) return {cls:'bi',txt:T('Opening soon · opens in ')+mkDur(w),inMin:w};
+            return {cls:'pa',txt:T('Closed · opens in ')+mkDur(w),inMin:w};
           }
         }
       }
       var days=1, nd=(wd+1)%7;                    // after close or weekend → next Mon–Fri first session
       while(nd===0||nd===6){days++;nd=(nd+1)%7;}
       w=days*1440-min+s[0][0];
-      return {cls:'pa',txt:'Closed · opens in '+mkDur(w),inMin:w};
+      return {cls:'pa',txt:T('Closed · opens in ')+mkDur(w),inMin:w};
     }
     // Horizontal marquee (markets / countdowns rows): sibling of setupCityMarquee.
     // One card set → measure; if wider than the row, duplicate it and drift left
@@ -1062,12 +1067,12 @@
       if(sig!==mkSig){
         mkSig=sig;
         var one=vis.length?vis.map(function(v){var m=MARKETS[v.i];
-          return '<div class="mk-card'+(v.pinned?' pinned':'')+'" data-i="'+v.i+'" title="'+m.n+' — nominal session hours; public holidays not accounted for">'+
+          return '<div class="mk-card'+(v.pinned?' pinned':'')+'" data-i="'+v.i+'" title="'+m.n+T(' — nominal session hours; public holidays not accounted for')+'">'+
             (m.y?'<a class="mk-src" href="https://finance.yahoo.com/quote/'+encodeURIComponent(m.y)+'" target="_blank" rel="noopener" title="'+m.n+' benchmark ('+m.y+') on Yahoo Finance">↗</a>':'')+
             '<div class="mk-name">'+(v.pinned?'★ ':'')+m.n+'</div><div class="mk-city">'+m.c+'</div>'+
             '<div class="mk-time">—</div>'+
             '<span class="pill pa">—</span></div>';
-        }).join(''):'<div class="muted-note">No markets open or opening within 3 hours.</div>';
+        }).join(''):'<div class="muted-note">'+T('No markets open or opening within 3 hours.')+'</div>';
         setupRowMarquee($('mkMarquee'),track,one);
       }
       track.querySelectorAll('.mk-card').forEach(function(card){
@@ -1225,11 +1230,11 @@
     }
     function breakdown(ms){var s=Math.floor(Math.abs(ms)/1000);
       return{d:Math.floor(s/86400),h:Math.floor(s%86400/3600),m:Math.floor(s%3600/60),s:s%60}}
-    function remText(ms){var b=breakdown(ms);var t=(b.d?b.d+'d ':'')+pad(b.h)+':'+pad(b.m)+':'+pad(b.s);return ms<0?t+' ago':t}
+    function remText(ms){var b=breakdown(ms);var t=(b.d?b.d+'d ':'')+pad(b.h)+':'+pad(b.m)+':'+pad(b.s);return ms<0?t+T(' ago'):t}
     // Static ↗ source anchor for a countdown card (http/https only — shared imports are untrusted).
     function srcLink(ev,cls){
       return (ev.url&&/^https?:\/\//i.test(ev.url))
-        ?'<a class="'+cls+'" href="'+esc(ev.url)+'" target="_blank" rel="noopener" title="Source: '+esc(ev.url)+'">↗</a>':'';
+        ?'<a class="'+cls+'" href="'+esc(ev.url)+'" target="_blank" rel="noopener" title="'+T('Source: ')+esc(ev.url)+'">↗</a>':'';
     }
 
     function renderCd(){
@@ -1247,12 +1252,12 @@
       $('cdGrid').innerHTML=list.map(function(e){
         var t=targetOf(e),passed=t<=now;
         return '<div class="cd-card'+(passed?' passed':'')+'">'+
-          '<button class="c-x" data-x="'+esc(e.id||e.name)+'" data-bi="'+(e._bi?1:0)+'" title="'+(e._bi?'Hide':'Remove')+'">✕</button>'+
+          '<button class="c-x" data-x="'+esc(e.id||e.name)+'" data-bi="'+(e._bi?1:0)+'" title="'+(e._bi?T('Hide'):T('Remove'))+'">✕</button>'+
           srcLink(e,'c-src')+
           '<div class="c-name">'+esc(e.name)+'</div>'+
           '<div class="c-when">'+whenLabel(e)+'</div>'+
           '<div class="c-rem" data-t="'+t+'">'+remText(t-now)+'</div>'+
-          '<span class="pill '+(e._bi?'bi':(passed?'pa':'up'))+'">'+(e._bi?'built-in':(passed?'passed':'upcoming'))+'</span>'+
+          '<span class="pill '+(e._bi?'bi':(passed?'pa':'up'))+'">'+(e._bi?T('built-in'):(passed?T('passed'):T('upcoming')))+'</span>'+
           '</div>';
       }).join('');
     }
@@ -1273,7 +1278,7 @@
           return '<div class="nc-card">'+srcLink(e,'nc-src')+'<div class="nc-name">'+esc(e.name)+'</div>'+
             '<div class="nc-when">'+whenLabel(e)+'</div>'+
             '<div class="nc-rem" data-t="'+t+'">'+remText(t-now)+'</div></div>';
-        }).join(''):'<div class="muted-note">No upcoming countdowns yet — add one in the Countdowns tab.</div>';
+        }).join(''):'<div class="muted-note">'+T('No upcoming countdowns yet — add one in the Countdowns tab.')+'</div>';
         setupRowMarquee($('cdMarquee'),track,one);
       }
       track.querySelectorAll('.nc-rem').forEach(function(el){el.textContent=remText(+el.dataset.t-now)});
@@ -1282,7 +1287,7 @@
       var now=Date.now()+clockOffsetMs;
       if(!$('cdHero').hidden){var t=+$('cdHero').dataset.t;var b=breakdown(t-now);
         $('heroClock').innerHTML=[['Days',b.d],['Hours',b.h],['Mins',b.m],['Secs',b.s]].map(function(u){
-          return '<div class="cd-unit"><div class="n">'+(u[0]==='Days'?u[1]:pad(u[1]))+'</div><div class="u">'+u[0]+'</div></div>'}).join('');}
+          return '<div class="cd-unit"><div class="n">'+(u[0]==='Days'?u[1]:pad(u[1]))+'</div><div class="u">'+T(u[0])+'</div></div>'}).join('');}
       document.querySelectorAll('#cdGrid .c-rem').forEach(function(el){el.textContent=remText(+el.dataset.t-now)});
     }
     $('cdAdd').addEventListener('submit',function(e){
@@ -1293,7 +1298,7 @@
       if(url){if(!/^https?:\/\//i.test(url))url='https://'+url; ev.url=url;}
       userEvents.push(ev);
       save(LS_EVENTS,userEvents);$('evName').value='';$('evDate').value='';$('evTime').value='';$('evUrl').value='';
-      renderCd();tickCd();toast('Added “'+name+'”');
+      renderCd();tickCd();toast(T('Added ')+'“'+name+'”');
     });
     $('cdGrid').addEventListener('click',function(e){
       var x=e.target.closest('[data-x]');if(!x)return;
@@ -1303,7 +1308,7 @@
     });
     $('cdSearch').addEventListener('input',function(){cdQuery=this.value.trim();renderCd();tickCd()});
     $('shareBtn').onclick=function(){
-      if(!userEvents.length){toast('Add an event first to share');return;}
+      if(!userEvents.length){toast(T('Add an event first to share'));return;}
       var enc=btoa(unescape(encodeURIComponent(JSON.stringify(userEvents))));
       copy(location.origin+location.pathname+'?c='+encodeURIComponent(enc));
     };
@@ -1407,7 +1412,7 @@
         ['ISO week · day of year', 'W'+pad(isoWeek(d))+' · day '+dayOfYear(d)],
       ];
       $('wbGrid').innerHTML=vals.map(function(v,i){
-        return '<div class="read" data-v="'+esc(v[1])+'"><span class="cp">click to copy</span>'+
+        return '<div class="read" data-v="'+esc(v[1])+'"><span class="cp">'+T('click to copy')+'</span>'+
                '<div class="lbl">'+v[0]+'</div><div class="val">'+esc(v[1])+'</div></div>';
       }).join('');
       $('wbCitiesHead').hidden=!pins.length; $('wbCities').innerHTML=pins.map(function(tz){
@@ -1423,11 +1428,11 @@
       else el.textContent=msg;}
     function wbUpdate(){
       var raw=$('wbInput').value;
-      if(!raw.trim()){wbLive=true;wbFeedback('Tracking now — type or paste any timestamp to freeze an instant.');wbRender(now());return;}
+      if(!raw.trim()){wbLive=true;wbFeedback(T('Tracking now — type or paste any timestamp to freeze an instant.'));wbRender(now());return;}
       var r=wbParse(raw);
-      if(r.err){wbLive=false;wbFeedback('Not recognized — epoch (10 or 13 digits), ISO 8601 / RFC 3339, DICOM DA/DT, or SMPTE HH:MM:SS:FF.',1);return;}
-      if(isNaN(r.date)){wbLive=false;wbFeedback('That parses, but it is not a real moment in time.',1);return;}
-      wbLive=false;wbFeedback('Read as: |'+r.how);wbRender(r.date);
+      if(r.err){wbLive=false;wbFeedback(T('Not recognized — epoch (10 or 13 digits), ISO 8601 / RFC 3339, DICOM DA/DT, or SMPTE HH:MM:SS:FF.'),1);return;}
+      if(isNaN(r.date)){wbLive=false;wbFeedback(T('That parses, but it is not a real moment in time.'),1);return;}
+      wbLive=false;wbFeedback(T('Read as: ')+'|'+r.how);wbRender(r.date);
     }
     $('wbRate').innerHTML=WB_RATES.map(function(r){return '<option value="'+r.id+'"'+(r.id===wbRate.id?' selected':'')+'>'+r.label+' fps</option>'}).join('');
     $('wbRate').addEventListener('change',function(){
@@ -1484,9 +1489,9 @@
       }
     }
     function updateMetBtn(){ var b=$('utMet'); b.classList.toggle('active',metOn);
-      b.textContent=metOn?'♩'+metBpm:'♩ Metro';
-      $('metToggle').textContent=metOn?'■ Stop':'▶ Start'; }
-    function metStart(){ if(!audio()){toast('Audio unavailable');return;}
+      b.textContent=metOn?'♩'+metBpm:T('♩ Metro');
+      $('metToggle').textContent=metOn?T('■ Stop'):T('▶ Start'); }
+    function metStart(){ if(!audio()){toast(T('Audio unavailable'));return;}
       metOn=true; metBeat=0; metNext=audioCtx.currentTime+0.08;
       clearInterval(metTimer); metTimer=setInterval(metSchedule,25); updateMetBtn(); }
     function metStop(){ metOn=false; clearInterval(metTimer); metTimer=null; updateMetBtn(); }
@@ -1511,9 +1516,9 @@
       var b=$('utTimer');
       b.classList.toggle('tm-done',tmDone);
       b.classList.toggle('active',tmEnd>0&&!tmDone);
-      b.textContent=tmDone?'0:00':(tmEnd?tmFmt(tmEnd-Date.now()):(tmLeft?tmFmt(tmLeft):'⏱ Timer'));
+      b.textContent=tmDone?'0:00':(tmEnd?tmFmt(tmEnd-Date.now()):(tmLeft?tmFmt(tmLeft):T('⏱ Timer')));
       $('tmRead').textContent=tmDone?'0:00':tmFmt(tmEnd?tmEnd-Date.now():(tmLeft||tmInputMs()));
-      $('tmToggle').textContent=tmEnd?'❚❚ Pause':'▶ Start';
+      $('tmToggle').textContent=tmEnd?T('❚❚ Pause'):T('▶ Start');
     }
     function tmFinish(){
       tmEnd=0; tmLeft=0; tmDone=true;
@@ -1524,7 +1529,7 @@
     function tickTimer(){ if(tmEnd){ if(tmEnd-Date.now()<=0) tmFinish(); else updateTimerUI(); } }
     $('tmToggle').addEventListener('click',function(){
       if(tmEnd){ tmLeft=Math.max(0,tmEnd-Date.now()); tmEnd=0; }                  // pause
-      else{ var ms=tmLeft||tmInputMs(); if(ms<=0){toast('Set a duration first');return;}
+      else{ var ms=tmLeft||tmInputMs(); if(ms<=0){toast(T('Set a duration first'));return;}
         tmDone=false; tmEnd=Date.now()+ms; audio(); }                             // gesture → arm audio for the alarm
       updateTimerUI();
     });
@@ -1544,7 +1549,7 @@
       $('calTitle').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric'}).format(new Date(calY,calM,1));
       var first=new Date(calY,calM,1), last=new Date(calY,calM+1,0);
       var start=new Date(calY,calM,1-((first.getDay()+6)%7));                     // Monday on/before the 1st
-      var html='<span class="ch"></span>'+['Mo','Tu','We','Th','Fr','Sa','Su'].map(function(w){return '<span class="ch">'+w+'</span>'}).join('');
+      var html='<span class="ch"></span>'+['Mo','Tu','We','Th','Fr','Sa','Su'].map(function(w){return '<span class="ch">'+T(w)+'</span>'}).join('');
       for(var r=0;;r++){
         var mon=new Date(start.getFullYear(),start.getMonth(),start.getDate()+r*7);
         if(mon>last)break;
@@ -1592,6 +1597,19 @@
       if(!$('zonesModal').hidden) drawMap('tz');
     });
     setInterval(loop,1000);
+
+    /* ---------- language hook ----------
+       i18n.js is deferred, so everything this script paints during parse — the
+       clock-source line, the readout grid, the util-strip buttons whose labels
+       are state-dependent — resolved T() to English. i18n.js calls this after
+       every apply (first load and every carino:langchange), which is the only
+       place those once-rendered surfaces get repainted. */
+    window.onLanguageApplied=function(){
+      renderClockSrc();
+      buildReadouts(); tickNow(now());
+      $('fmtToggle').textContent=hour12?T('24-hour'):T('12-hour');
+      updateMetBtn(); updateTimerUI();
+    };
   })();
   </script>
 </body>
