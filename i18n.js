@@ -8,6 +8,10 @@
 
 const I18N = {
     es: {
+        'Late shift.': 'Turno nocturno.',
+        'Good morning.': 'Buenos días.',
+        'Good afternoon.': 'Buenas tardes.',
+        'Good evening.': 'Buenas noches.',
         // Header tabs + section chrome
         'Zones': 'Zonas',
         'Countdowns': 'Cuentas regresivas',
@@ -139,6 +143,10 @@ const I18N = {
         'Copy failed': 'Error al copiar',
     },
     'pt-BR': {
+        'Late shift.': 'Turno da noite.',
+        'Good morning.': 'Bom dia.',
+        'Good afternoon.': 'Boa tarde.',
+        'Good evening.': 'Boa noite.',
         'Zones': 'Fusos',
         'Countdowns': 'Contagens regressivas',
         '⌗ Workbench': '⌗ Conversor',
@@ -260,6 +268,10 @@ const I18N = {
         'Copy failed': 'Falha ao copiar',
     },
     ja: {
+        'Late shift.': '夜勤お疲れさま。',
+        'Good morning.': 'おはようございます。',
+        'Good afternoon.': 'こんにちは。',
+        'Good evening.': 'こんばんは。',
         'Zones': 'ゾーン',
         'Countdowns': 'カウントダウン',
         '⌗ Workbench': '⌗ ワークベンチ',
@@ -381,6 +393,10 @@ const I18N = {
         'Copy failed': 'コピーに失敗しました',
     },
     ru: {
+        'Late shift.': 'Ночная смена.',
+        'Good morning.': 'Доброе утро.',
+        'Good afternoon.': 'Добрый день.',
+        'Good evening.': 'Добрый вечер.',
         'Zones': 'Часовые пояса',
         'Countdowns': 'Обратный отсчёт',
         '⌗ Workbench': '⌗ Конвертер',
