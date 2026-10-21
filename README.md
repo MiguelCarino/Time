@@ -4,6 +4,8 @@ Local time, UTC, Unix epoch and ISO — a searchable world-clock with pinned
 zones, plus live countdowns you can add and share. Runs entirely in the browser
 (`time.carino.systems`).
 
+![Time](screenshot.webp)
+
 Three sections:
 
 - **Now** — big local clock with a 12/24-hour toggle, and click-to-copy readouts:
