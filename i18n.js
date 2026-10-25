@@ -8,6 +8,12 @@
 
 const I18N = {
     es: {
+      "Device clock": "Reloj del dispositivo",
+      "Adjusted ": "Ajustado ",
+      "Updates every second": "Se actualiza cada segundo",
+      "Paused (tab hidden)": "En pausa (pestaña oculta)",
+      "Nominal hours, holidays not included": "Horario nominal, sin días festivos",
+      "Data: this device's clock. Market hours are nominal; public holidays are not included. Runs in your browser; nothing is uploaded.": "Datos: el reloj de este dispositivo. El horario de las bolsas es nominal; no incluye días festivos. Se ejecuta en tu navegador; no se sube nada.",
         'Late shift.': 'Turno nocturno.',
         'Good morning.': 'Buenos días.',
         'Good afternoon.': 'Buenas tardes.',
@@ -143,6 +149,12 @@ const I18N = {
         'Copy failed': 'Error al copiar',
     },
     'pt-BR': {
+      "Device clock": "Relógio do dispositivo",
+      "Adjusted ": "Ajustado ",
+      "Updates every second": "Atualiza a cada segundo",
+      "Paused (tab hidden)": "Pausado (aba oculta)",
+      "Nominal hours, holidays not included": "Horário nominal, sem feriados",
+      "Data: this device's clock. Market hours are nominal; public holidays are not included. Runs in your browser; nothing is uploaded.": "Dados: o relógio deste dispositivo. O horário das bolsas é nominal; feriados não são considerados. Roda no seu navegador; nada é enviado.",
         'Late shift.': 'Turno da noite.',
         'Good morning.': 'Bom dia.',
         'Good afternoon.': 'Boa tarde.',
@@ -268,6 +280,12 @@ const I18N = {
         'Copy failed': 'Falha ao copiar',
     },
     ja: {
+      "Device clock": "端末の時計",
+      "Adjusted ": "補正 ",
+      "Updates every second": "毎秒更新",
+      "Paused (tab hidden)": "一時停止（タブ非表示）",
+      "Nominal hours, holidays not included": "通常の取引時間（祝日は考慮しません）",
+      "Data: this device's clock. Market hours are nominal; public holidays are not included. Runs in your browser; nothing is uploaded.": "データ：この端末の時計。市場の取引時間は通常時のもので、祝日は含みません。ブラウザ内で動作し、何もアップロードされません。",
         'Late shift.': '夜勤お疲れさま。',
         'Good morning.': 'おはようございます。',
         'Good afternoon.': 'こんにちは。',
@@ -393,6 +411,12 @@ const I18N = {
         'Copy failed': 'コピーに失敗しました',
     },
     ru: {
+      "Device clock": "Часы устройства",
+      "Adjusted ": "Сдвиг ",
+      "Updates every second": "Обновляется каждую секунду",
+      "Paused (tab hidden)": "Пауза (вкладка скрыта)",
+      "Nominal hours, holidays not included": "Обычные часы, без учёта праздников",
+      "Data: this device's clock. Market hours are nominal; public holidays are not included. Runs in your browser; nothing is uploaded.": "Данные: часы этого устройства. Часы работы бирж номинальные; праздники не учитываются. Работает в браузере; ничего не загружается.",
         'Late shift.': 'Ночная смена.',
         'Good morning.': 'Доброе утро.',
         'Good afternoon.': 'Добрый день.',
@@ -571,8 +595,8 @@ function applyAttrI18n() {
         const el = document.getElementById(id);
         if (el) el.title = t(I18N_TITLES[id]);
     });
-    const mkKicker = document.querySelector('.now-mk-row .kicker');
-    if (mkKicker) mkKicker.title = t('Nominal session hours — public holidays are not accounted for');
+    const mkPill = document.querySelector('.now-mk-row .pill');
+    if (mkPill) mkPill.title = t('Nominal session hours — public holidays are not accounted for');
     // The 12h/24h toggle is rewritten by app code; translate it only while its
     // text is still a known English key (first load), never guess otherwise.
     const ft = document.getElementById('fmtToggle');

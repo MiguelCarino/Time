@@ -28,17 +28,8 @@
   <!-- /carino:head -->
   <link rel="icon" type="image/webp" href="logo.webp">
   <link rel="stylesheet" href="fonts/carino-fonts.css">
+  <link rel="stylesheet" href="carino-ui.css">
   <style>
-    :root{
-      --bg:#050505; --bg-elev:#0d0d0d; --bg-card:#0b0b0b;
-      --accent:#eab308; --accent-faint:rgba(234,179,8,.05); --accent-glow:rgba(234,179,8,.15); --accent-dim:rgba(234,179,8,.30);
-      --border:#262626; --text:#fff; --text-sec:#a3a3a3; --text-muted:#8a8a8a;
-      --ok:#22c55e; --warn:#eab308; --err:#ef4444;
-      --sans:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
-      --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
-      --display:'Red Hat Display',var(--sans);
-      --radius:10px;
-    }
     *{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%}
     body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;
@@ -68,12 +59,7 @@
     .now-sub{font-family:var(--mono);color:var(--text-sec);margin-top:14px;font-size:.9rem}
     .now-sub .abbr{color:var(--accent)}
     .fmt-toggle{position:absolute;top:16px;right:16px}
-    .btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.68rem;font-weight:700;
-      text-transform:uppercase;letter-spacing:.06em;padding:0 13px;height:34px;border-radius:6px;cursor:pointer;
-      border:1px solid var(--border);background:transparent;color:var(--text-sec);transition:.16s;white-space:nowrap}
-    .btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-faint)}
-    .btn-primary{background:var(--accent);border-color:var(--accent);color:#050505}
-    .btn-primary:hover{background:#fbbf24;color:#050505}
+    /* .btn / .btn-primary come from carino-ui.css; .sm is Time's compact size */
     .btn.sm{height:28px;font-size:.62rem;padding:0 10px}
 
     .read-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
@@ -106,13 +92,10 @@
     .now-hero .read .lbl{margin:0;flex:none;color:var(--accent)}
     .now-hero .read .val{font-size:.8rem;text-align:right;word-break:normal;white-space:nowrap;line-height:1.3;font-variant-numeric:tabular-nums}
     .now-hero .read .cp{display:none}
-    /* clock-source line + compact manual-offset editor */
-    .clock-src{font-family:var(--mono);font-size:.6rem;color:var(--text-muted);margin-top:9px;letter-spacing:.04em}
-    .clock-src.adj{color:var(--accent)}
-    .cs-btn{border:none;background:transparent;padding:0;font:inherit;color:var(--text-sec);cursor:pointer;
-      text-decoration:underline;text-underline-offset:2px;transition:.15s}
-    .cs-btn:hover{color:var(--accent)}
-    .clock-src.adj .cs-btn{color:var(--accent)}
+    /* clock source: a .live-chip in the navbar (DEVICE CLOCK / ADJUSTED +1.25s);
+       clicking it opens the compact manual-offset editor in the clock card */
+    button.live-chip{background:transparent;cursor:pointer;transition:.15s}
+    button.live-chip:hover,button.live-chip:focus-visible{border-color:var(--accent);outline:none}
     .clock-adj{display:flex;gap:6px;justify-content:center;align-items:center;margin-top:6px}
     .clock-adj[hidden]{display:none}
     .clock-adj input{width:130px;height:26px;background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;
@@ -126,7 +109,7 @@
     .util-strip .btn.tm-done{border-color:var(--err);color:var(--err);animation:tmflash 1s steps(2,end) infinite}
     @keyframes tmflash{50%{background:rgba(239,68,68,.22)}}
     @media (prefers-reduced-motion: reduce){ .util-strip .btn.tm-done{animation:none;background:rgba(239,68,68,.22)} }
-    .modal-card.modal-slim{width:min(360px,100%)}
+    .modal.modal-slim{width:min(360px,100%)}
     .ut-row{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}
     .ut-row input[type=number]{width:74px;height:34px;background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;
       color:var(--text);font-family:var(--mono);font-size:.9rem;text-align:center;padding:0 4px}
@@ -187,7 +170,9 @@
     .nc-when{font-family:var(--mono);font-size:.6rem;color:var(--text-muted);margin-top:2px}
     .nc-rem{font-family:var(--mono);font-size:1.05rem;font-weight:700;color:var(--accent);margin-top:8px}
     .now-mk-row{min-width:0}
-    .now-mk-row .kicker{margin-bottom:12px}
+    .now-mk-row .row-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-bottom:12px}
+    .now-mk-row .kicker{margin:0}
+    .row-head .pill{margin-top:0}
     .mk-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px;position:relative}
     .mk-card.pinned{border-color:var(--accent-dim);background:linear-gradient(145deg,#14100a,#0b0b0b)}
     .mk-name{font-weight:700;font-size:.9rem;padding-right:16px}
@@ -198,7 +183,22 @@
     .mk-city{font-family:var(--mono);font-size:.6rem;color:var(--text-muted);margin-top:2px}
     .mk-time{font-family:var(--mono);font-size:1.05rem;font-weight:700;margin-top:8px}
     .tz-lead{stroke:var(--accent-dim);stroke-width:.6;opacity:.6}
-    @media (max-width:900px){ .now-dash{grid-template-columns:1fr} .now-below{grid-template-columns:1fr} }
+    #panel-now .data-foot{flex:none;margin-top:18px}
+    @media (max-width:900px){
+      .now-dash{grid-template-columns:1fr;grid-template-rows:auto}
+      .now-below{grid-template-columns:1fr}
+      /* one column: the page scrolls, and the map keeps its own 2:1 shape
+         instead of sharing a fixed height with the clock (it collapsed to a line) */
+      #panel-now.active{height:auto;overflow:visible}
+      .nd-map .tzmap-wrap{flex:none;aspect-ratio:2/1}
+      .nd-side{overflow:visible}
+    }
+    /* phones: no drifting rows; the cards scroll sideways and snap */
+    @media (max-width:640px){
+      .h-marquee{overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+      .h-marquee::-webkit-scrollbar{display:none}
+      .nc-grid>*{scroll-snap-align:start}
+    }
     /* short viewports (e.g. 1366x768): tighten the clock card so the city marquee keeps a visible band */
     @media (max-height:800px){
       .nd-side .now-hero{padding:12px 16px}
@@ -206,7 +206,6 @@
       .nd-side .now-sub{margin-top:5px;font-size:.68rem}
       .now-hero .read-grid{margin-top:10px;gap:4px}
       .now-hero .read{padding:5px 10px}
-      .clock-src{margin-top:6px}
     }
 
     /* ---- ZONES ---- */
@@ -241,15 +240,16 @@
 
     /* ---- navbar action buttons + count badge ---- */
     .nav-actions{display:flex;gap:8px;align-items:center}
+    .nav-actions .cs-btn{gap:7px}
     .cnt{font-family:var(--mono);font-size:.6rem;color:var(--text-muted);border:1px solid var(--border);border-radius:20px;padding:1px 7px}
 
     /* ---- generic modal (Zones / Countdowns popups) ---- */
-    .modal{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:22px}
-    .modal[hidden]{display:none}
-    .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.64);backdrop-filter:blur(3px)}
-    .modal-card{position:relative;z-index:1;display:flex;flex-direction:column;width:min(760px,100%);max-height:min(90vh,940px);
-      background:var(--bg-card);border:1px solid var(--border);border-radius:16px;box-shadow:0 30px 90px rgba(0,0,0,.72);overflow:hidden;animation:fade .2s ease}
-    .modal-card.modal-wide{width:min(1180px,100%)}
+    /* .modal-scrim and .modal come from carino-ui.css; the backdrop is the
+       click-to-close layer, and Time's dialogs run wider than the default */
+    .modal-scrim{padding:22px}
+    .modal-backdrop{position:absolute;inset:0}
+    .modal{position:relative;z-index:1;width:min(760px,100%);max-width:none;max-height:min(90vh,940px);animation:fade .2s ease}
+    .modal.modal-wide{width:min(1180px,100%)}
     .modal-head{display:flex;align-items:center;gap:14px;padding:15px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
     .modal-title{font-family:var(--display);font-weight:900;text-transform:uppercase;letter-spacing:.5px;font-size:1.5rem}
     .modal-head .search{flex:1;min-width:180px}
@@ -364,12 +364,6 @@
     #wbGrid{margin-bottom:4px}
     .wb-note{font-family:var(--mono);font-size:.62rem;color:var(--text-muted);line-height:1.7;margin-top:14px}
 
-    /* ---- toast ---- */
-    .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(14px);z-index:9999;
-      font-family:var(--mono);font-size:.74rem;font-weight:700;padding:10px 16px;border-radius:8px;
-      border:1px solid rgba(34,197,94,.5);color:#86efac;background:rgba(34,197,94,.12);
-      box-shadow:0 10px 30px rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.22s;max-width:90vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
     @media(max-width:720px){
       .stage{padding-left:14px;padding-right:14px}
@@ -381,9 +375,12 @@
 
   <!-- section tabs -->
   <div class="nav-actions" id="tabs" data-carino-actions>
-    <button class="btn sm" id="openZones">✦ <span data-i18n>Zones</span> <span class="cnt" id="pinCount">0</span></button>
-    <button class="btn sm" id="openCountdowns">⧗ <span data-i18n>Countdowns</span> <span class="cnt" id="cdCount">0</span></button>
-    <button class="btn sm" id="openWb" data-i18n>⌗ Workbench</button>
+    <!-- source: everything here is computed from this device's clock -->
+    <button class="live-chip live" id="clockSrc" type="button" data-priority="2" title="All times on this page — clocks, markets, countdowns, calendar, workbench — derive from this clock. Adjust it if this device's clock drifts."></button>
+    <span class="fresh" id="clockFresh"></span>
+    <button class="cs-btn" id="openZones" data-priority="1">✦ <span data-i18n>Zones</span> <span class="cnt" id="pinCount">0</span></button>
+    <button class="cs-btn" id="openCountdowns">⧗ <span data-i18n>Countdowns</span> <span class="cnt" id="cdCount">0</span></button>
+    <button class="cs-btn" id="openWb" data-i18n>⌗ Workbench</button>
   </div>
 
   <main class="stage">
@@ -410,7 +407,6 @@
             <div class="now-time" id="nowTime">00:00:00</div>
             <div class="now-sub" id="nowSub">—</div>
             <div class="read-grid" id="readGrid"></div>
-            <div class="clock-src" id="clockSrc" title="All times on this page — clocks, markets, countdowns, calendar, workbench — derive from this clock. Adjust it if this device's clock drifts."></div>
             <div class="clock-adj" id="clockAdj" hidden>
               <input id="csInput" type="number" step="any" placeholder="seconds, e.g. -1.25" aria-label="Clock offset in seconds">
               <button class="btn sm" id="csApply" type="button" data-i18n>Apply</button>
@@ -433,7 +429,7 @@
       </div>
       <div class="now-below">
         <div class="now-mk-row">
-          <div class="kicker" title="Nominal session hours — public holidays are not accounted for" data-i18n>Stock market openings</div>
+          <div class="row-head"><div class="kicker" data-i18n>Stock market openings</div><span class="pill warn" title="Nominal session hours — public holidays are not accounted for" data-i18n>Nominal hours, holidays not included</span></div>
           <div class="h-marquee" id="mkMarquee"><div id="nowMarkets" class="nc-grid"></div></div>
         </div>
         <div class="now-cd-row">
@@ -441,12 +437,13 @@
           <div class="h-marquee" id="cdMarquee"><div id="nowCountdowns" class="nc-grid"></div></div>
         </div>
       </div>
+      <p class="data-foot" data-i18n>Data: this device's clock. Market hours are nominal; public holidays are not included. Runs in your browser; nothing is uploaded.</p>
     </section>
 
     <!-- ZONES (popup) -->
-    <div class="modal" id="zonesModal" hidden>
+    <div class="modal-scrim" id="zonesModal" hidden>
       <div class="modal-backdrop" id="zonesBackdrop"></div>
-      <div class="modal-card modal-wide">
+      <div class="modal modal-wide">
         <div class="modal-head">
           <div class="modal-title" data-i18n>Zones</div>
           <div class="mt-controls">
@@ -477,9 +474,9 @@
     </div>
 
     <!-- COUNTDOWNS (popup) -->
-    <div class="modal" id="countdownsModal" hidden>
+    <div class="modal-scrim" id="countdownsModal" hidden>
       <div class="modal-backdrop" id="cdBackdrop"></div>
-      <div class="modal-card modal-wide">
+      <div class="modal modal-wide">
         <div class="modal-head">
           <div class="modal-title" data-i18n>Countdowns</div>
           <div class="search"><span class="ico">⌕</span><input id="cdSearch" placeholder="Search events…" autocomplete="off" spellcheck="false"></div>
@@ -506,9 +503,9 @@
     </div>
 
     <!-- TIMESTAMP WORKBENCH (popup) -->
-    <div class="modal" id="wbModal" hidden>
+    <div class="modal-scrim" id="wbModal" hidden>
       <div class="modal-backdrop" id="wbBackdrop"></div>
-      <div class="modal-card modal-wide">
+      <div class="modal modal-wide">
         <div class="modal-head">
           <div class="modal-title" data-i18n>Workbench</div>
           <div class="mt-controls">
@@ -531,9 +528,9 @@
       </div>
     </div>
     <!-- METRONOME (popup) -->
-    <div class="modal" id="metModal" hidden>
+    <div class="modal-scrim" id="metModal" hidden>
       <div class="modal-backdrop" id="metBackdrop"></div>
-      <div class="modal-card modal-slim">
+      <div class="modal modal-slim">
         <div class="modal-head">
           <div class="modal-title" data-i18n>Metronome</div>
           <button class="modal-close" id="closeMet" aria-label="Close Metronome">✕</button>
@@ -551,9 +548,9 @@
     </div>
 
     <!-- TIMER (popup) -->
-    <div class="modal" id="tmModal" hidden>
+    <div class="modal-scrim" id="tmModal" hidden>
       <div class="modal-backdrop" id="tmBackdrop"></div>
-      <div class="modal-card modal-slim">
+      <div class="modal modal-slim">
         <div class="modal-head">
           <div class="modal-title" data-i18n>Timer</div>
           <button class="modal-close" id="closeTimer" aria-label="Close Timer">✕</button>
@@ -575,9 +572,9 @@
     </div>
 
     <!-- CALENDAR (popup) -->
-    <div class="modal" id="calModal" hidden>
+    <div class="modal-scrim" id="calModal" hidden>
       <div class="modal-backdrop" id="calBackdrop"></div>
-      <div class="modal-card modal-slim">
+      <div class="modal modal-slim">
         <div class="modal-head">
           <div class="modal-title" data-i18n>Calendar</div>
           <button class="modal-close" id="closeCal" aria-label="Close Calendar">✕</button>
@@ -612,7 +609,7 @@
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <div class="toast ok" id="toast" role="status"></div>
 
   <script src="carino-clock.js"></script>
   <script src="carino-navbar.js" data-app="Time" data-repo="Time" defer></script>
@@ -722,20 +719,28 @@
     function fmtOffset(){var s=clockOffsetMs/1000;return (s>0?'+':'')+s.toFixed(2)+'s'}
     function renderClockSrc(){
       var el=$('clockSrc'); if(!el)return; var adj=clockOffsetMs!==0;
-      el.classList.toggle('adj',adj);
-      el.innerHTML=adj
-        ?T('clock: this device, adjusted ')+fmtOffset()+' · <button class="cs-btn" data-act="edit" type="button">'+T('change')+'</button> · <button class="cs-btn" data-act="reset" type="button">'+T('reset')+'</button>'
-        :T('clock: this device')+' · <button class="cs-btn" data-act="edit" type="button">'+T('adjust')+'</button>';
+      el.className='live-chip '+(adj?'delayed':'live');
+      el.textContent=adj?T('Adjusted ')+fmtOffset():T('Device clock');
+      el.setAttribute('aria-label',(adj?T('Adjusted ')+fmtOffset():T('Device clock'))+' · '+(adj?T('change'):T('adjust')));
+      renderClockFresh();
     }
+    /* The page is computed every second from the clock above; a hidden tab
+       has its timers throttled, so it says it is paused rather than live. */
+    function renderClockFresh(){
+      var f=$('clockFresh'); if(!f)return;
+      var paused=document.hidden;
+      var cls='fresh'+(paused?' paused':''), txt=paused?T('Paused (tab hidden)'):T('Updates every second');
+      if(f.className!==cls) f.className=cls;
+      if(f.textContent!==txt) f.textContent=txt;
+    }
+    document.addEventListener('visibilitychange',renderClockFresh);
     function setClockOffset(ms){
       clockOffsetMs=ms; save(LS_OFFSET,clockOffsetMs);
       renderClockSrc(); loop(); renderNowCities(now(),true);
     }
-    $('clockSrc').addEventListener('click',function(e){
-      var b=e.target.closest('[data-act]'); if(!b)return;
-      if(b.dataset.act==='reset'){$('clockAdj').hidden=true;setClockOffset(0);toast(T('Clock back on device time'));return;}
+    $('clockSrc').addEventListener('click',function(){
       var row=$('clockAdj'); row.hidden=!row.hidden;
-      if(!row.hidden){$('csInput').value=clockOffsetMs?String(clockOffsetMs/1000):'';$('csInput').focus();}
+      if(!row.hidden){$('csInput').value=clockOffsetMs?String(clockOffsetMs/1000):'';row.scrollIntoView({block:'nearest'});$('csInput').focus();}
       renderNowCities(now(),true);              // hero height changed — re-fit the city marquee
     });
     $('csApply').addEventListener('click',function(){
@@ -811,6 +816,8 @@
     }
     // Now "Selected cities": update times in place (keeps the marquee running); rebuild only when the pin set changes.
     var nowPinSig=null, mqReduce=(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    // Phones get no marquees at all: rows scroll sideways and snap instead.
+    function phoneMq(){ return !!(window.matchMedia&&window.matchMedia('(max-width: 640px)').matches); }
     function updateNowCityTimes(d){
       d=d||now(); var track=$('nowPinned'); if(!track)return;
       track.querySelectorAll('.zone').forEach(function(el){
@@ -828,6 +835,7 @@
       var hero=side&&side.querySelector('.now-hero'), k=wrap.querySelector('.kicker'), us=$('utilStrip'), avail=0;
       if(side) avail=side.clientHeight-(hero?hero.offsetHeight:0)-(us?us.offsetHeight+14:0)-(k?k.offsetHeight:0)-30;  // remaining space below the clock card + utility strip
       var singleH=track.scrollHeight;
+      if(phoneMq()) return;                                      // phones: one column, the page scrolls
       if(!(avail>40 && singleH>avail+4)) return;                 // everything fits — natural height, no scroll
       mq.style.height=avail+'px';                                // bound to the clock+map column height
       if(mqReduce){ mq.style.overflowY='auto'; return; }         // reduced-motion → scrollable list, no animation
@@ -1064,7 +1072,7 @@
       track.innerHTML=one;                                       // single set → measure natural width
       var singleW=track.scrollWidth, avail=mq.clientWidth;
       if(!(avail>60 && singleW>avail+4)) return;                 // everything fits — static row
-      if(mqReduce){ mq.style.overflowX='auto'; return; }         // reduced-motion → scrollable row
+      if(mqReduce||phoneMq()){ mq.style.overflowX='auto'; return; }   // reduced motion or a phone → scrollable row (snaps on phones)
       var unit=singleW+12;                                       // one set + one flex gap = seamless repeat unit
       track.innerHTML=one+one;
       track.style.setProperty('--hshift',unit+'px');
