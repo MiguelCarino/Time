@@ -103,8 +103,12 @@
     .clock-adj input:focus{outline:none;border-color:var(--accent)}
     .clock-adj .btn.sm{height:26px}
     /* utility strip — tick · metronome · timer · calendar */
-    .util-strip{display:flex;gap:8px;flex:none}
-    .util-strip .btn{flex:1;justify-content:center;padding:0 6px}
+    .util-strip{display:flex;flex-wrap:wrap;gap:6px;flex:none}
+    /* sized by label and kept on one line: translated labels (メトロノーム, Temporizador)
+       are longer than the English abbreviations and broke mid-word at phone width.
+       No shrinking below the label: when the four do not fit, the strip wraps to a
+       second row rather than clipping a label. */
+    .util-strip .btn{flex:1 1 auto;justify-content:center;padding:0 6px;white-space:nowrap}
     .util-strip .btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-faint)}
     .util-strip .btn.tm-done{border-color:var(--err);color:var(--err);animation:tmflash 1s steps(2,end) infinite}
     @keyframes tmflash{50%{background:rgba(239,68,68,.22)}}
@@ -631,6 +635,9 @@
     function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
     // Fleet i18n bridge — the deferred dictionary script loads after this one, so resolve lazily; falls back to English.
     function T(s){return (window.CarinoI18n&&window.CarinoI18n.t)?window.CarinoI18n.t(s):s}
+    // Display locale for written-out dates (weekday/month names) — the page language once i18n.js has set it.
+    function LOC(){var l=document.documentElement.lang||'en';return l==='en'?'en-US':l}
+    function dayN(n){return T('day {n}').replace('{n}',n)}
 
     /* ---------- clock source ---------- */
     // Every "current instant" read goes through now(); a user-applied manual
@@ -704,10 +711,10 @@
     }
     function tickNow(d){
       $('nowTime').textContent=fmtTime(d);
-      var wd=new Intl.DateTimeFormat('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(d);
+      var wd=new Intl.DateTimeFormat(LOC(),{weekday:'long',year:'numeric',month:'long',day:'numeric'}).format(d);
       var abbr=new Intl.DateTimeFormat('en-US',{timeZoneName:'short'}).formatToParts(d).find(function(p){return p.type==='timeZoneName'});
       var tz=(Intl.DateTimeFormat().resolvedOptions().timeZone||'').replace(/_/g,' ');
-      $('nowSub').innerHTML=wd+' · W'+pad(isoWeek(d))+' · day '+dayOfYear(d)+' · <span class="abbr">'+tz+(abbr?' ('+abbr.value+')':'')+'</span>';
+      $('nowSub').innerHTML=wd+' · W'+pad(isoWeek(d))+' · '+dayN(dayOfYear(d))+' · <span class="abbr">'+tz+(abbr?' ('+abbr.value+')':'')+'</span>';
       readDefs.forEach(function(r,i){var el=$('read-'+i);if(el)el.textContent=r.get(d)});
     }
     $('fmtToggle').onclick=function(){hour12=!hour12;localStorage.setItem(LS_FMT,hour12?'12':'24');
@@ -806,7 +813,7 @@
         '<span class="z-city">'+esc(cityOf(tz))+'</span></div>'+
         '<div class="z-time">'+fmtTime(d,tz)+'</div>'+
         '<div class="z-meta"><span>'+offLabel(off)+'</span><span class="z-rel">'+relLabel(off-loc)+'</span></div>'+
-        '<div class="z-region">'+esc(regionOf(tz))+'</div></div>';
+        '<div class="z-region">'+esc(T(regionOf(tz)))+'</div></div>';
     }
     // Pinned zones mirrored at the top of BOTH Now and Zones.
     function renderPinnedStrips(d){
@@ -1013,6 +1020,56 @@
       if(!$('wbModal').hidden){closeWb();return;}
     });
 
+    /* Dialog focus: moving into a popup when it opens, keeping Tab inside it,
+       and handing focus back to the button that opened it on close. Watches the
+       hidden attribute so every open/close function above stays as it is. */
+    (function(){
+      var FOCUSABLE='button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+      var ids=['zonePopup','metModal','tmModal','calModal','zonesModal','countdownsModal','wbModal'];
+      var openers={};
+      function visible(el){return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length);}
+      function items(box){return [].slice.call(box.querySelectorAll(FOCUSABLE)).filter(visible);}
+      function top(){for(var i=0;i<ids.length;i++){var el=$(ids[i]);if(el&&!el.hidden)return el;}return null;}
+      ids.forEach(function(id){
+        var box=$(id); if(!box)return;
+        var card=box.querySelector('.modal')||box.querySelector('[role="dialog"]');
+        if(card){card.setAttribute('role','dialog');card.setAttribute('aria-modal','true');}
+        new MutationObserver(function(){
+          if(!box.hidden){
+            var a=document.activeElement;
+            if(!openers[id]&&a&&!box.contains(a))openers[id]=a;
+            if(card){var t=card.querySelector('.modal-title');if(t)card.setAttribute('aria-label',t.textContent.trim());}
+            if(!box.contains(document.activeElement)){var f=items(box);if(f.length)f[0].focus();}
+          }else{
+            var o=openers[id]; openers[id]=null;
+            var a2=document.activeElement;
+            if(o&&document.contains(o)&&(!a2||a2===document.body||box.contains(a2))){
+              // an opener inside the navbar's folded More menu is hidden once the
+              // menu closes; the More button that holds it takes focus instead
+              if(!visible(o)){var m=document.querySelector('#carinoNav .cn-more');if(m&&visible(m))o=m;}
+              o.focus();
+            }
+          }
+        }).observe(box,{attributes:true,attributeFilter:['hidden']});
+      });
+      // Some open functions focus their search field themselves, before the
+      // observer runs; the element focused just before that is the opener.
+      var lastFocus=null;
+      document.addEventListener('focusin',function(e){
+        ids.forEach(function(id){var box=$(id);if(box&&!box.hidden&&box.contains(e.target)&&lastFocus&&!box.contains(lastFocus)&&!openers[id])openers[id]=lastFocus;});
+        lastFocus=e.target;
+      });
+      document.addEventListener('keydown',function(e){
+        if(e.key!=='Tab')return;
+        var box=top(); if(!box)return;
+        var f=items(box); if(!f.length)return;
+        var first=f[0],last=f[f.length-1],a=document.activeElement;
+        if(!box.contains(a)){e.preventDefault();first.focus();}
+        else if(e.shiftKey&&a===first){e.preventDefault();last.focus();}
+        else if(!e.shiftKey&&a===last){e.preventDefault();first.focus();}
+      });
+    })();
+
     /* ---------- MARKETS ---------- */
     // Nominal Mon–Fri sessions in the market's LOCAL minutes-from-midnight (public holidays not accounted for).
     // y = benchmark-index symbol; card ↗ links to it on Yahoo Finance.
@@ -1097,7 +1154,7 @@
         mkSig=sig;
         var one=vis.length?vis.map(function(v){var m=MARKETS[v.i];
           return '<div class="mk-card'+(v.pinned?' pinned':'')+'" data-i="'+v.i+'" title="'+m.n+T(' — nominal session hours; public holidays not accounted for')+'">'+
-            (m.y?'<a class="mk-src" href="https://finance.yahoo.com/quote/'+encodeURIComponent(m.y)+'" target="_blank" rel="noopener" title="'+m.n+' benchmark ('+m.y+') on Yahoo Finance">↗</a>':'')+
+            (m.y?'<a class="mk-src" href="https://finance.yahoo.com/quote/'+encodeURIComponent(m.y)+'" target="_blank" rel="noopener" title="'+esc(T('{n} benchmark ({y}) on Yahoo Finance').replace('{n}',m.n).replace('{y}',m.y))+'">↗</a>':'')+
             '<div class="mk-name">'+(v.pinned?'★ ':'')+m.n+'</div><div class="mk-city">'+m.c+'</div>'+
             '<div class="mk-time">—</div>'+
             '<span class="pill pa">—</span></div>';
@@ -1249,12 +1306,12 @@
     function targetOf(ev){return ev.ts!=null?ev.ts:new Date(ev.date+'T'+(ev.time||'00:00')).getTime()}
     function events(){
       var bi=BUILTINS.filter(function(b){return hidden.indexOf(b.id)<0}).map(function(b){
-        return {id:b.id,name:b.name,date:b.date,time:b.time,ts:b.ts,url:b.url,_bi:true}});
+        return {id:b.id,name:T(b.name),date:b.date,time:b.time,ts:b.ts,url:b.url,_bi:true}});
       return bi.concat(userEvents);
     }
     function whenLabel(ev){
       var d=new Date(targetOf(ev));
-      var s=new Intl.DateTimeFormat('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric'}).format(d);
+      var s=new Intl.DateTimeFormat(LOC(),{weekday:'short',year:'numeric',month:'short',day:'numeric'}).format(d);
       return ev.time? s+' · '+fmtTime(d):s;
     }
     function breakdown(ms){var s=Math.floor(Math.abs(ms)/1000);
@@ -1376,9 +1433,9 @@
     function wbParse(raw){
       var s=raw.trim(); if(!s)return null;
       var m;
-      if(/^\d{13}$/.test(s)) return {date:new Date(+s), how:'Unix epoch milliseconds'};
-      if(/^\d{10}$/.test(s)) return {date:new Date(+s*1000), how:'Unix epoch seconds'};
-      if(/^\d{9}$/.test(s))  return {date:new Date(+s*1000), how:'Unix epoch seconds'};
+      if(/^\d{13}$/.test(s)) return {date:new Date(+s), how:T('Unix epoch milliseconds')};
+      if(/^\d{10}$/.test(s)) return {date:new Date(+s*1000), how:T('Unix epoch seconds')};
+      if(/^\d{9}$/.test(s))  return {date:new Date(+s*1000), how:T('Unix epoch seconds')};
       // DICOM DA / DT — 8, 12 or 14 digits, optional fraction and ±ZZXX offset
       if((m=s.match(/^(\d{4})(\d{2})(\d{2})(?:(\d{2})(\d{2})(\d{2})?)?(?:\.(\d{1,6}))?([+-]\d{4})?$/))){
         var y=+m[1],mo=+m[2],da=+m[3];
@@ -1386,8 +1443,8 @@
           var hh=+(m[4]||0),mi=+(m[5]||0),se=+(m[6]||0),ms=m[7]?Math.round(+('0.'+m[7])*1000):0;
           if(hh<24&&mi<60&&se<60){
             if(m[8]){var om=(+m[8].slice(1,3))*60+(+m[8].slice(3,5)); if(m[8][0]==='-')om=-om;
-              return {date:new Date(Date.UTC(y,mo-1,da,hh,mi,se,ms)-om*60000), how:'DICOM DT ('+m[8]+')'};}
-            return {date:new Date(y,mo-1,da,hh,mi,se,ms), how:m[4]?'DICOM DT (local)':'DICOM DA (local midnight)'};
+              return {date:new Date(Date.UTC(y,mo-1,da,hh,mi,se,ms)-om*60000), how:T('DICOM DT ({z})').replace('{z}',m[8])};}
+            return {date:new Date(y,mo-1,da,hh,mi,se,ms), how:T(m[4]?'DICOM DT (local)':'DICOM DA (local midnight)')};
           }
         }
       }
@@ -1397,17 +1454,17 @@
         if(h<24&&mn<60&&sc<60&&fr<wbRate.nominal){
           var secs=tcToFrames(h,mn,sc,fr,wbRate)*wbRate.den/wbRate.num;
           return {date:new Date(localMidnight(now()).getTime()+secs*1000),
-                  how:'SMPTE timecode @ '+wbRate.label+' (today, local)'};
+                  how:T('SMPTE timecode @ {r} (today, local)').replace('{r}',wbRate.label)};
         }
       }
       // ISO 8601 / RFC 3339 — date-only and zoneless forms read as LOCAL, unlike new Date()
       if((m=s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?\s*(Z|[+-]\d{2}:?\d{2})?)?$/i))){
         var Y=+m[1],MO=+m[2],DA=+m[3],H=+(m[4]||0),MI=+(m[5]||0),SE=+(m[6]||0),MS=+((m[7]||'')+'00').slice(0,3)||0;
         if(MO>=1&&MO<=12&&DA>=1&&DA<=31&&H<24&&MI<60&&SE<60){
-          if(m[8]&&m[8].toUpperCase()==='Z') return {date:new Date(Date.UTC(Y,MO-1,DA,H,MI,SE,MS)), how:'ISO 8601 (UTC)'};
+          if(m[8]&&m[8].toUpperCase()==='Z') return {date:new Date(Date.UTC(Y,MO-1,DA,H,MI,SE,MS)), how:T('ISO 8601 (UTC)')};
           if(m[8]){var o=m[8].replace(':',''),omin=(+o.slice(1,3))*60+(+o.slice(3,5)); if(o[0]==='-')omin=-omin;
-            return {date:new Date(Date.UTC(Y,MO-1,DA,H,MI,SE,MS)-omin*60000), how:'ISO 8601 ('+m[8]+')'};}
-          return {date:new Date(Y,MO-1,DA,H,MI,SE,MS), how:m[4]?'ISO 8601 (local)':'ISO date (local midnight)'};
+            return {date:new Date(Date.UTC(Y,MO-1,DA,H,MI,SE,MS)-omin*60000), how:T('ISO 8601 ({z})').replace('{z}',m[8])};}
+          return {date:new Date(Y,MO-1,DA,H,MI,SE,MS), how:T(m[4]?'ISO 8601 (local)':'ISO date (local midnight)')};
         }
       }
       return {err:1};
@@ -1434,11 +1491,11 @@
         ['Unix epoch (s)', String(Math.floor(d.getTime()/1000))],
         ['Unix epoch (ms)', String(d.getTime())],
         ['ISO 8601 · UTC', d.toISOString().replace(/\.\d{3}Z$/,'Z')],
-        ['ISO 8601 · local', isoLocalOf(d)],
+        [T('ISO 8601 · local'), isoLocalOf(d)],
         ['DICOM DT', dicomOf(d)],
         ['DICOM DA · TM', ''+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+' · '+pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds())],
-        ['SMPTE timecode', smpteOf(d)],
-        ['ISO week · day of year', 'W'+pad(isoWeek(d))+' · day '+dayOfYear(d)],
+        [T('SMPTE timecode'), smpteOf(d)],
+        [T('ISO week · day of year'), 'W'+pad(isoWeek(d))+' · '+dayN(dayOfYear(d))],
       ];
       $('wbGrid').innerHTML=vals.map(function(v,i){
         return '<div class="read" data-v="'+esc(v[1])+'"><span class="cp">'+T('click to copy')+'</span>'+
@@ -1446,7 +1503,7 @@
       }).join('');
       $('wbCitiesHead').hidden=!pins.length; $('wbCities').innerHTML=pins.map(function(tz){
         var t=fmtTime(d,tz);
-        var day=new Intl.DateTimeFormat('en-GB',{timeZone:tz,weekday:'short',day:'numeric',month:'short'}).format(d);
+        var day=new Intl.DateTimeFormat(LOC(),{timeZone:tz,weekday:'short',day:'numeric',month:'short'}).format(d);
         return '<div class="zone"><div class="z-top"><span class="z-city">'+esc(cityOf(tz))+'</span></div>'+
           '<div class="z-time">'+t+'</div>'+
           '<div class="z-meta"><span>'+day+'</span><span>'+offLabel(zoneOffsetMin(tz,d))+'</span></div></div>';
@@ -1575,7 +1632,7 @@
     var calY=0, calM=0;
     function calRender(){
       var t=now();
-      $('calTitle').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric'}).format(new Date(calY,calM,1));
+      $('calTitle').textContent=new Intl.DateTimeFormat(LOC(),{month:'long',year:'numeric'}).format(new Date(calY,calM,1));
       var first=new Date(calY,calM,1), last=new Date(calY,calM+1,0);
       var start=new Date(calY,calM,1-((first.getDay()+6)%7));                     // Monday on/before the 1st
       var html='<span class="ch"></span>'+['Mo','Tu','We','Th','Fr','Sa','Su'].map(function(w){return '<span class="ch">'+T(w)+'</span>'}).join('');
@@ -1638,6 +1695,12 @@
       buildReadouts(); tickNow(now());
       $('fmtToggle').textContent=hour12?T('24-hour'):T('12-hour');
       updateMetBtn(); updateTimerUI();
+      // Surfaces built once and then only updated in place keep their old words: rebuild them.
+      renderRegionBar(); renderZones(); renderNowCities(now(),true);
+      mkSig=null; nowCdSig=null; renderMarkets(now()); renderNowCountdowns();
+      renderCd(); tickCd();
+      if(!$('wbModal').hidden) wbUpdate();
+      if(!$('calModal').hidden) calRender();
     };
   })();
   </script>
