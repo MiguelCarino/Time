@@ -27,6 +27,24 @@
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Time", "url": "https://time.carino.systems/", "description": "Local time, UTC and Unix epoch — a searchable world-clock with pinned zones, live stock-market opening hours, plus countdowns you can add and share.", "operatingSystem": "Any (runs in a web browser)", "isAccessibleForFree": true, "author": {"@type": "Person", "name": "Miguel Cariño", "url": "https://carino.systems/"}}</script>
   <!-- /carino:head -->
   <link rel="icon" type="image/webp" href="logo.webp">
+  <!-- Theme before first paint, so neither theme flashes the other:
+       ?theme=gold|color (review links; not stored) > carino-theme cookie
+       (shared across *.carino.systems) > localStorage > Gold & Black. -->
+  <meta name="theme-color" content="#050505" id="carinoThemeColor">
+  <script>
+  (function () {
+    var d = document.documentElement, t = null;
+    function pick(v) { return v === 'gold' ? 'gold' : (v === 'color' || v === 'colour') ? 'color' : null; }
+    try { t = pick(new URLSearchParams(location.search).get('theme')); } catch (e) {}
+    if (!t) { try { var m = document.cookie.match(/(?:^|;\s*)carino-theme=([^;]*)/); if (m) t = pick(decodeURIComponent(m[1])); } catch (e) {} }
+    if (!t) { try { t = pick(localStorage.getItem('carino-theme')); } catch (e) {} }
+    t = t || 'gold';
+    d.setAttribute('data-carino-theme', t);
+    var dark = d.getAttribute('data-theme') !== 'light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+    var meta = document.getElementById('carinoThemeColor');
+    if (meta) meta.content = t === 'gold' ? '#050505' : (dark ? '#0e1420' : '#eef3fc');
+  })();
+  </script>
   <link rel="stylesheet" href="fonts/carino-fonts.css">
   <link rel="stylesheet" href="carino-ui.css">
   <style>
@@ -223,7 +241,9 @@
     .tzmap-wrap{position:relative;margin:0 0 6px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0b1017}
     .tzmap{display:block;width:100%;height:auto}
     .tz-ocean{fill:#2b3a4e}
-    .tz-land{fill:#57604a;stroke:#6b7355;stroke-width:.4;stroke-linejoin:round}
+    /* the land is drawn through <use>, whose copy no :root-scoped rule reaches:
+       the colours come in as inherited custom properties, so a theme can set them */
+    .tz-land{fill:var(--tz-land,#57604a);stroke:var(--tz-coast,#6b7355);stroke-width:.4;stroke-linejoin:round}
     .tz-night{fill:rgba(4,8,20,.78);pointer-events:none}
     .tz-mk{cursor:pointer}
     .tz-glow{fill:var(--accent);opacity:.22}
@@ -373,6 +393,30 @@
       .stage{padding-left:14px;padding-right:14px}
       .cd-add .field.grow{min-width:140px}
     }
+  </style>
+  <!-- Colourful theme + the switch; nothing applies until data-carino-theme="color". -->
+  <link rel="stylesheet" href="carino-theme.css">
+  <style>
+    /* Colourful: carino-theme.css remaps the tokens (and redraws the day/night
+       map for paper), so everything that reads one follows; these are the
+       values above that were written for black. */
+    :root[data-carino-theme="color"]{scrollbar-color:var(--ct-scroll) transparent}
+    :root[data-carino-theme="color"] body{background-image:var(--stage-grad)}
+    :root[data-carino-theme="color"] .now-hero,:root[data-carino-theme="color"] .cd-hero{background:radial-gradient(900px 360px at 50% -40%,var(--accent-glow),transparent 60%),var(--bg-card);box-shadow:var(--ct-shadow-1)}
+    :root[data-carino-theme="color"] .now-time,:root[data-carino-theme="color"] .cd-unit .n{background-image:var(--ct-hero-text)}
+    :root[data-carino-theme="color"] .read:hover{background:var(--bg-card);box-shadow:var(--ct-shadow-2)}
+    :root[data-carino-theme="color"] .now-hero .read{background:var(--bg-elev);border-color:var(--border)}
+    :root[data-carino-theme="color"] .now-hero .read:hover{background:var(--accent-faint)}
+    :root[data-carino-theme="color"] .mk-card.pinned{background:var(--accent-faint)}
+    :root[data-carino-theme="color"] .cal-grid .cd.today,:root[data-carino-theme="color"] .region-chip.active{color:var(--ct-on-accent)}
+    :root[data-carino-theme="color"] .zone:hover,:root[data-carino-theme="color"] .cd-card:hover{border-color:var(--border-hv)}
+    :root[data-carino-theme="color"]{--tz-land:var(--ct-map-land);--tz-coast:var(--ct-map-coast)}
+    :root[data-carino-theme="color"] .tz-dot{stroke:var(--ct-map-halo)}
+    :root[data-carino-theme="color"] .tz-sun{stroke:var(--warn)}
+    :root[data-carino-theme="color"] .zp-backdrop{background:var(--ct-scrim)}
+    :root[data-carino-theme="color"] .zp-card{box-shadow:var(--ct-shadow-3)}
+    :root[data-carino-theme="color"] .modal-close:hover,:root[data-carino-theme="color"] .cd-card .c-x:hover{background:color-mix(in srgb,var(--err) 8%,transparent)}
+    :root[data-carino-theme="color"] .pill.up{border-color:color-mix(in srgb,var(--ok) 40%,transparent);background:color-mix(in srgb,var(--ok) 8%,transparent)}
   </style>
 </head>
 <body>
@@ -617,6 +661,7 @@
 
   <script src="carino-clock.js"></script>
   <script src="carino-navbar.js" data-app="Time" data-repo="Time" defer></script>
+  <script src="carino-theme.js" data-mark="logo.svg" data-mark-color="logo-color.svg" defer></script>
   <script src="carino-lang.js" defer></script>
   <script src="i18n.js" defer></script>
   <script>
